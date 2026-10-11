@@ -1,0 +1,27 @@
+# Cloudflare Pages cache policy.
+# Rules are first-match-wins, so the entry document is listed before the catch-all.
+
+# The HTML entry document must always revalidate so a new deploy is visible at once.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Hashed Vite bundles (JS/CSS/worker) are content-addressed: cache them for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Spacecraft GLB models never change under the same name.
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# CelesTrak proxy (Pages Function) — must NOT fall through to the yearly immutable
+# catch-all below, or TLE data would be pinned for a year. Matches the Function's own TTL.
+/api/*
+  Cache-Control: public, max-age=1800
+
+# Planet/dwarf/moon surface maps, the star map and the favicon. Names are stable, so they
+# are safe to cache for a year (bust the name if a map is ever replaced).
+/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Space Tracker">
+  <defs>
+    <radialGradient id="planet" cx="38%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#7fd4ff"/>
+      <stop offset="55%" stop-color="#2f7fd6"/>
+      <stop offset="100%" stop-color="#123a66"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#05070d"/>
+  <circle cx="7" cy="8" r="1" fill="#cfe8ff" opacity="0.9"/>
+  <circle cx="26" cy="6" r="0.9" fill="#cfe8ff" opacity="0.7"/>
+  <circle cx="25" cy="24" r="0.8" fill="#cfe8ff" opacity="0.6"/>
+  <circle cx="6" cy="23" r="0.7" fill="#cfe8ff" opacity="0.5"/>
+  <ellipse cx="16" cy="16" rx="14" ry="5.2" fill="none" stroke="#5fd0ff" stroke-width="1.6" opacity="0.85" transform="rotate(-22 16 16)"/>
+  <circle cx="16" cy="16" r="7.4" fill="url(#planet)"/>
+</svg>

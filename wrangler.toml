@@ -1,0 +1,12 @@
+# Cloudflare Worker: static assets from the Vite build + a Worker that proxies CelesTrak.
+#
+# Cloudflare serves any request that matches an asset (every texture, model and bundle)
+# directly from the asset collection. The Worker only runs for requests with no matching
+# asset, which in this app is exactly `/api/celestrak/*` (see worker/index.js).
+name = "space"
+compatibility_date = "2024-11-06"
+main = "worker/index.js"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"

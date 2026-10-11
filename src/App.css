@@ -1,0 +1,400 @@
+/* Global dark space theme */
+:root {
+  --accent: #38bdf8;
+  --accent2: #818cf8;
+  --bg-panel: rgba(4, 12, 24, 0.82);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: rgba(255, 255, 255, 0.9);
+  --text-dim: rgba(255, 255, 255, 0.45);
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; overflow: hidden; background: #000;
+  font-family: 'Inter', sans-serif; color: var(--text);
+  /* Touch: no blue tap flash, no rubber-band pull-to-refresh, and no accidental
+     page/text selection when a finger rests on the scene. */
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Text stays selectable where it is meant to be copied. */
+input, textarea, [contenteditable="true"], .tle-block {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* Let the orbit controls own every touch gesture on the canvas. */
+canvas { touch-action: none; }
+
+/* Glass panel mixin */
+.glass {
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, #030a1a 0%, #000 100%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.loading-content { text-align: center; }
+.loading-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 2.5rem; font-weight: 700;
+  letter-spacing: 0.3em;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+.loading-subtitle { color: var(--text-dim); font-size: 0.75rem; letter-spacing: 0.2em; margin-bottom: 0.75rem; }
+.loading-creator {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  opacity: 0.85;
+  margin-bottom: 2rem;
+}
+.loading-message { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem; min-height: 1.2em; }
+.loading-bar {
+  width: 320px; height: 2px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden; margin: 0 auto;
+}
+.loading-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Error overlay */
+.error-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  display: flex; align-items: center; justify-content: center; z-index: 1001;
+}
+.error-content {
+  background: rgba(255,40,40,0.15); border: 1px solid rgba(255,40,40,0.4);
+  border-radius: var(--radius); padding: 2rem; max-width: 400px; text-align: center;
+}
+.error-content button {
+  margin-top: 1rem; padding: 0.5rem 1.5rem;
+  background: rgba(255,40,40,0.3); border: 1px solid rgba(255,40,40,0.5);
+  color: #fff; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: 320px; min-width: 320px; max-width: 320px;
+  box-sizing: border-box;
+  padding: 1rem 0.85rem;
+  display: flex; flex-direction: column; gap: 0.65rem;
+  z-index: 100; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.sidebar-header {
+  font-family: 'Space Mono', monospace; font-size: 0.72rem;
+  letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase;
+  padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+}
+.sidebar-count { color: var(--text-dim); font-size: 0.72rem; margin-top: 0.2rem; font-family: 'Space Mono', monospace; }
+
+.panel {
+  padding: 0.75rem 0.8rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+.panel-title {
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;
+}
+
+/* Category list */
+.cat-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.5rem; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s;
+  user-select: none;
+}
+.cat-item:hover { background: rgba(255,255,255,0.05); }
+.cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-name { flex: 1; font-size: 0.82rem; }
+.cat-count { font-size: 0.72rem; color: var(--text-dim); font-family: 'Space Mono', monospace; }
+.cat-toggle {
+  width: 28px; height: 16px; border-radius: 8px;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; padding: 1px;
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.cat-toggle.on { background: #0284c7; border-color: #38bdf8; }
+.cat-toggle-thumb {
+  width: 12px; height: 12px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.cat-toggle.on .cat-toggle-thumb { transform: translateX(12px); }
+.cat-toggle.off .cat-toggle-thumb { transform: translateX(0); }
+
+/* Time controls */
+.time-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.time-btn {
+  flex: 1; min-width: 48px; padding: 0.35rem 0.4rem;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  color: var(--text); border-radius: 6px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 0.7rem;
+  transition: all 0.15s; text-align: center;
+}
+.time-btn:hover { background: rgba(255,255,255,0.12); }
+.time-btn.active { background: rgba(56,189,248,0.15); border-color: var(--accent); color: var(--accent); }
+.time-btn.danger { border-color: rgba(255,80,80,0.4); color: rgba(255,120,120,0.9); }
+.time-btn.danger:hover { background: rgba(255,80,80,0.15); }
+
+/* Search bar. --search-left / --search-width are set inline by SearchBar when
+   the satellite info panel is open, so the bar re-centres into the free band
+   and never collides with the sidebar or the (left-shifted) HUD. */
+.search-wrap {
+  position: fixed; top: 1rem;
+  left: var(--search-left, 50%);
+  transform: translateX(-50%);
+  z-index: 200; width: var(--search-width, min(320px, calc(100vw - 580px)));
+  transition: left 0.25s ease, width 0.25s ease;
+}
+.search-input-wrap { position: relative; height: 36px; }
+.search-input {
+  width: 100%; height: 36px; padding: 0 2.2rem 0 2rem;
+  box-sizing: border-box;
+  background: rgba(0, 10, 20, 0.82); border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px; color: var(--text);
+  font-size: 0.82rem; outline: none;
+  font-family: inherit;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.2s;
+}
+.search-input::placeholder { color: var(--text-dim); }
+.search-input:focus { border-color: rgba(56,189,248,0.5); }
+.search-clear {
+  position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 1rem; padding: 0.2rem; line-height: 1;
+}
+.search-results {
+  text-align: center; font-size: 0.72rem; color: var(--text-dim);
+  margin-top: 0.4rem; font-family: 'Space Mono', monospace;
+}
+
+/* HUD */
+.hud {
+  position: fixed; top: 1rem; right: 1rem;
+  z-index: 100; min-width: 140px; padding: 0 0.8rem;
+  min-height: 36px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 10, 20, 0.82);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  font-family: 'Space Mono', monospace; font-size: 0.72rem;
+  display: flex; flex-direction: column; justify-content: center;
+  transition: right 0.25s ease, opacity 0.2s ease;
+}
+.hud.shifted {
+  right: 345px;
+}
+.hud-row { display: flex; justify-content: space-between; gap: 1rem; }
+.hud-label { color: var(--text-dim); }
+.hud-value { color: var(--text); }
+.hud-fps-good { color: #38bdf8; }
+.hud-fps-ok   { color: #fbbf24; }
+.hud-fps-bad  { color: #f87171; }
+.hud-clock {
+  font-size: 0.75rem; color: var(--accent);
+  letter-spacing: 0.04em;
+  display: flex; align-items: center;
+}
+
+/* Info panel */
+.info-panel {
+  position: fixed; top: 1rem; right: 1rem;
+  width: 320px; max-height: calc(100vh - 2rem);
+  overflow-y: auto; z-index: 120; padding: 1.1rem;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.info-panel::-webkit-scrollbar { width: 4px; }
+.info-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.info-close {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 1.1rem; padding: 0.2rem;
+  transition: color 0.15s;
+}
+.info-close:hover { color: var(--text); }
+
+.info-header-btn:hover {
+  background: rgba(255,255,255,0.14) !important;
+  color: #fff !important;
+  border-color: rgba(56,189,248,0.4) !important;
+}
+
+.info-name {
+  font-family: 'Space Mono', monospace; font-size: 0.9rem;
+  font-weight: 700; color: #fff; margin-right: 1.5rem;
+  line-height: 1.3; word-break: break-word;
+}
+.info-norad { color: var(--text-dim); font-size: 0.72rem; margin-top: 0.25rem; font-family: 'Space Mono', monospace; }
+.info-badge {
+  display: inline-block; padding: 0.2rem 0.6rem;
+  border-radius: 100px; font-size: 0.65rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-top: 0.5rem; margin-bottom: 1rem;
+}
+
+.info-section { margin-bottom: 1rem; }
+.info-section-title {
+  font-size: 0.62rem; font-weight: 600; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase;
+  margin-bottom: 0.5rem; padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.info-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 0.25rem 0; font-size: 0.8rem;
+}
+.info-row-label { color: var(--text-dim); }
+.info-row-value { color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.75rem; }
+.info-row-value.highlight { color: var(--accent); }
+
+.tle-block {
+  background: rgba(0,0,0,0.4); border-radius: 6px;
+  padding: 0.6rem; font-family: 'Space Mono', monospace;
+  font-size: 0.6rem; color: rgba(255,255,255,0.5);
+  word-break: break-all; line-height: 1.6; margin-top: 0.5rem;
+}
+.tle-toggle {
+  background: none; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 6px; padding: 0.3rem 0.7rem;
+  cursor: pointer; font-size: 0.72rem; transition: all 0.15s;
+}
+.tle-toggle:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+/* Tooltip / orbit type badge */
+.orbit-type {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 8px; padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+  font-size: 0.78rem; color: var(--accent);
+}
+
+/* Display controls & sliders */
+.display-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+.display-subhead {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 0.5rem;
+  margin-bottom: 0.15rem;
+  padding-left: 0.2rem;
+}
+.display-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.display-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+.display-slider-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+.display-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.display-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  transition: transform 0.1s;
+}
+.display-range::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile layout — everything above this breakpoint is the untouched desktop
+   arrangement (fixed 320px sidebar column, right-hand info panel, centred
+   search). Below it the sidebar becomes a dismissible overlay drawer and the
+   info panel becomes a bottom sheet.
+   --------------------------------------------------------------------------- */
+.sidebar-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  z-index: 390;
+}
+
+@media (max-width: 768px) {
+  /* Sidebar: overlay drawer instead of a permanent column, so it no longer
+     covers the top planet selector and search bar. */
+  .sidebar {
+    width: min(86vw, 340px);
+    min-width: 0;
+    max-width: none;
+    z-index: 400;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Search: own full-width row under the top bar (planet selector + toggles). */
+  .search-wrap {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+    transform: none;
+    top: 3.9rem;
+  }
+  .search-input-wrap { height: 40px; }
+  .search-input { height: 40px; font-size: 0.9rem; }
+
+  /* The info panel is a bottom sheet on mobile, so the HUD never shifts aside. */
+  .hud.shifted { right: 1rem; }
+}
+

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Space Tracker">
+  <defs>
+    <radialGradient id="planet" cx="38%" cy="32%" r="74%">
+      <stop offset="0%" stop-color="#a9e4ff"/>
+      <stop offset="42%" stop-color="#4aa3e6"/>
+      <stop offset="78%" stop-color="#1c5aa0"/>
+      <stop offset="100%" stop-color="#0d2c52"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5fd0ff" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#2f7fd6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#2f7fd6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="orbit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7fd4ff"/>
+      <stop offset="100%" stop-color="#3f7fd0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="#05070d"/>
+
+  <!-- Starfield -->
+  <g fill="#cfe8ff">
+    <circle cx="52" cy="62" r="3.2" opacity="0.95"/>
+    <circle cx="205" cy="48" r="2.6" opacity="0.8"/>
+    <circle cx="196" cy="196" r="2.8" opacity="0.7"/>
+    <circle cx="60" cy="188" r="2.2" opacity="0.6"/>
+    <circle cx="128" cy="34" r="1.8" opacity="0.7"/>
+    <circle cx="34" cy="128" r="1.6" opacity="0.5"/>
+    <circle cx="224" cy="126" r="1.8" opacity="0.6"/>
+    <circle cx="112" cy="222" r="1.7" opacity="0.5"/>
+  </g>
+
+  <!-- Soft planet glow -->
+  <circle cx="128" cy="128" r="86" fill="url(#glow)"/>
+
+  <!-- Orbit ring -->
+  <ellipse cx="128" cy="128" rx="104" ry="38" fill="none" stroke="url(#orbit)" stroke-width="6" opacity="0.9" transform="rotate(-24 128 128)"/>
+
+  <!-- Planet -->
+  <circle cx="128" cy="128" r="56" fill="url(#planet)"/>
+
+  <!-- Satellite dot riding the orbit -->
+  <circle cx="207" cy="86" r="8" fill="#eaf6ff" stroke="#5fd0ff" stroke-width="3"/>
+</svg>
