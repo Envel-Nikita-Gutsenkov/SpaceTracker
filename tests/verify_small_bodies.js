@@ -144,6 +144,14 @@ test('the render system creates and gates dwarfs and moons', () => {
   assert.match(src, /ORDERED_DWARF_KEYS/, 'dwarfs must be built from the registry');
   assert.match(src, /ORDERED_MOON_KEYS/, 'moons must be built from the registry');
   assert.match(src, /showClass \|\| isSelected \|\| isFocused/, 'small bodies must obey the toggle/selection gate');
+  // Orbits, unlike bodies, are never drawn for a whole layer at once: only the selected/focused
+  // body shows its orbit, so enabling dwarfs/moons cannot flood the scene with every ellipse.
+  assert.match(src, /line\.visible = Boolean\(showPlanetaryOrbits && \(isSelected \|\| isFocused\)\)/,
+    'dwarf orbit lines must be selection-only');
+  assert.match(src, /moonOrbitLine\.visible = Boolean\(isSelected \|\| isFocused\)/,
+    'moon orbit lines must be selection-only');
+  assert.doesNotMatch(src, /isSelected \|\| isFocused \|\| showMoons/,
+    'moon orbits must not ride the whole moon layer');
   assert.match(src, /isOfficialDwarf\(id\) \? showDwarfPlanets : showDwarfCandidates/,
     'official dwarfs and candidate dwarfs must be gated by their own flags');
   assert.match(src, /obj\.group\.visible = false/, 'small bodies must start hidden');

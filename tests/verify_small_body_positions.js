@@ -31,7 +31,7 @@ const { EARTH_RADIUS_KM } = await import('../src/utils/astronomy.js');
 const { getDwarfPositionThreeJS, getMoonOffsetThreeJS } = await import('../src/utils/smallBodyEphemeris.js');
 
 let passed = 0;
-const TOTAL = 7;
+const TOTAL = 8;
 function test(name, fn) {
   fn();
   passed++;
@@ -63,6 +63,13 @@ function makeBody(id, { bodyClass, parentId = null, tiltRad = 0 }) {
   };
 }
 
+function makeOrbitLine() {
+  const line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial());
+  line.visible = false;
+  line.userData = {};
+  return line;
+}
+
 function makeSystem() {
   const sys = Object.create(PlanetarySystem.prototype);
   sys.scene = new THREE.Scene();
@@ -91,6 +98,9 @@ function makeSystem() {
     b.group.visible = false;
     sys.smallBodies.set(key, b);
     sys.group.add(b.group);
+    const line = makeOrbitLine();
+    sys.group.add(line);
+    sys.orbitLines.set(key, line);
   });
 
   ORDERED_MOON_KEYS.forEach(key => {
@@ -107,6 +117,8 @@ function makeSystem() {
     pivot.add(b.group);
     parent.group.add(pivot);
     b.pivot = pivot;
+    b.moonOrbitLine = makeOrbitLine();
+    pivot.add(b.moonOrbitLine);
     sys.smallBodies.set(key, b);
   });
 
@@ -230,6 +242,42 @@ test('official dwarf planets and candidates are gated by two independent toggles
   }
   for (const id of candidates) {
     assert.equal(sys.smallBodies.get(id).group.visible, true, `candidate "${id}" must show`);
+  }
+});
+
+test('orbits are click-only: no dwarf or moon layer draws every ellipse at once', () => {
+  const date = new Date(Date.UTC(2026, 0, 1));
+  const dwarfOrbit = (id) => sys.orbitLines.get(id).visible;
+  const moonOrbit = (id) => sys.smallBodies.get(id).moonOrbitLine.visible;
+
+  // Every dwarf body on, nothing selected: not a single dwarf orbit may be drawn.
+  sys._updateSmallBodies(date, SUN, null, null, null, true, false, true, false);
+  for (const id of ORDERED_DWARF_KEYS) {
+    assert.equal(dwarfOrbit(id), false, `dwarf "${id}" orbit must stay hidden until selected`);
+  }
+
+  // Selecting one dwarf reveals exactly its own orbit.
+  sys._updateSmallBodies(date, SUN, null, 'ceres', null, true, false, true, false);
+  for (const id of ORDERED_DWARF_KEYS) {
+    assert.equal(dwarfOrbit(id), id === 'ceres', `dwarf "${id}" orbit visibility wrong when Ceres is selected`);
+  }
+
+  // Focusing (without selecting) does the same.
+  sys._updateSmallBodies(date, SUN, null, null, 'eris', true, false, true, false);
+  for (const id of ORDERED_DWARF_KEYS) {
+    assert.equal(dwarfOrbit(id), id === 'eris', `dwarf "${id}" orbit visibility wrong when Eris is focused`);
+  }
+
+  // Same rule for the moon layer: enabling moons draws no orbit web…
+  sys._updateSmallBodies(date, SUN, null, null, null, true, false, false, true);
+  for (const id of ORDERED_MOON_KEYS) {
+    assert.equal(moonOrbit(id), false, `moon "${id}" orbit must stay hidden until selected`);
+  }
+
+  // …and focusing one moon reveals only that orbit.
+  sys._updateSmallBodies(date, SUN, null, null, 'charon', true, false, false, true);
+  for (const id of ORDERED_MOON_KEYS) {
+    assert.equal(moonOrbit(id), id === 'charon', `moon "${id}" orbit visibility wrong when Charon is focused`);
   }
 });
 

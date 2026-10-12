@@ -480,7 +480,9 @@ export class PlanetarySystem {
 
       if (isMoonBody) {
         if (body.moonOrbitLine) {
-          body.moonOrbitLine.visible = Boolean(isSelected || isFocused || showMoons);
+          // Only the selected/focused moon shows its orbit — never the whole moon layer at once
+          // (the point/moon toggles reveal bodies, not a web of every satellite ellipse).
+          body.moonOrbitLine.visible = Boolean(isSelected || isFocused);
         }
       } else {
         // Heliocentric orbit line (static osculating ellipse — built once).
@@ -501,7 +503,11 @@ export class PlanetarySystem {
             line.geometry.computeBoundingSphere();
             line.userData.initialized = true;
           }
-          line.visible = Boolean(showPlanetaryOrbits && (showClass || isSelected || isFocused));
+          // Only the selected/focused dwarf shows its orbit. The dwarf-planet toggle controls the
+          // body, not a web of every dwarf ellipse — otherwise enabling dwarfs drew all of their
+          // (huge, planet-crossing) orbits at once. Only planet orbits are drawn by default; every
+          // other body's orbit appears on click/focus.
+          line.visible = Boolean(showPlanetaryOrbits && (isSelected || isFocused));
           if (line.visible) line.position.copy(sunPos);
         }
       }
