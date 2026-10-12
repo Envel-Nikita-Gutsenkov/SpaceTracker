@@ -68,13 +68,18 @@ test('Pluto fades its unphotographed south polar cap to shadow', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The axial tilt (Z) must be applied before the daily spin (Y), otherwise the
-// per-frame spin re-orients the tilt and the pole wobbles across latitudes
-// within one sidereal day (Pluto's sub-observer latitude swung +21° -> -22°).
+// The tilt (or the real IAU pole) must live on a PARENT pivot while the daily spin is a pure
+// local +Y rotation of the mesh. Applied to one object instead, the per-frame spin re-orients
+// the tilt and the pole wobbles across latitudes within one sidereal day (Pluto's sub-observer
+// latitude swung +21° -> -22°). A rotation about the pole can never move the pole.
 // ---------------------------------------------------------------------------
-test('Tilted bodies spin about a fixed tilted axis (ZYX Euler order)', () => {
-  assert.match(builder, /bodyMesh\.rotation\.order = 'ZYX'/,
-    "the body Euler order must be 'ZYX' so the daily spin happens about the tilted axis and the pole stays fixed");
+test('Tilted bodies spin about a fixed axis (tilt on the pivot, spin on the mesh)', () => {
+  assert.match(builder, /pivot\.rotation\.z = -tiltRad/,
+    'the fixed axial tilt must be carried by the orientation pivot');
+  assert.match(builder, /pivot\.add\(bodyMesh\)/,
+    'the body mesh must be a child of the pivot so its spin is about the pivot +Y');
+  assert.doesNotMatch(builder, /bodyMesh\.rotation\.z = -tiltRad/,
+    'the mesh must NOT carry the tilt itself — that is what let the per-frame spin re-orient it');
 });
 
 console.log('\n================================================================');

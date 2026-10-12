@@ -15,8 +15,14 @@ import {
   getMoonOffsetThreeJS,
   getMoonOrbitPoints,
   getMoonMeanAnomaly,
+  isSynchronousMoon,
 } from '../../utils/smallBodyEphemeris';
-import { getMoonPositionECI } from '../../utils/astronomy';
+import { getMoonPositionECI, toJulianDate } from '../../utils/astronomy';
+import {
+  hasIauSpin,
+  iauPoleQuaternion,
+  iauSpinAngleRad,
+} from '../../utils/iauOrientation';
 import { isPlanetCloseUp } from '../../utils/planetaryLabels';
 import { isSegmentOccludedBySphere } from '../../utils/celestialOcclusion';
 import { PlanetMeshBuilder } from './PlanetMeshBuilder';
@@ -170,6 +176,7 @@ export class PlanetarySystem {
     if (!sunPos) return;
 
     const timeMs = date ? date.getTime() : Date.now();
+    const jd = date ? toJulianDate(date) : null;
     const shouldRecalcOrbits = Math.abs(timeMs - this._lastOrbitUpdate) > 600000 || this._lastOrbitUpdate === 0;
 
     // Automatic Proximity Detection to ANY celestial body (Earth, Moon, Sun, or any Planet):
@@ -235,11 +242,18 @@ export class PlanetarySystem {
         planet.lastComputedHelio = pos.helio;
       }
 
-      // 2. Sidereal axial rotation
-      // Negated so a prograde body (rotPeriodHours > 0) rotates eastward, matching Earth's
-      // convention (world RA increases with time). Without the negation every planet spun
-      // opposite to its true direction.
-      if (planet.rotSpeed && planet.bodyMesh) {
+      // 2. Axial orientation + sidereal rotation.
+      // A body with published IAU rotational elements gets its real, time-dependent pole on the
+      // pivot and its true prime-meridian angle W(t) as a local +Y spin (see iauOrientation.js).
+      // Every other body keeps the legacy fixed-tilt + constant-rate approximation, unchanged.
+      if (planet.bodyPivot && jd !== null && hasIauSpin(id)) {
+        const q = iauPoleQuaternion(id, jd);
+        if (q) planet.bodyPivot.quaternion.set(q[0], q[1], q[2], q[3]);
+        planet.bodyMesh.rotation.set(0, iauSpinAngleRad(id, jd), 0);
+      } else if (planet.rotSpeed && planet.bodyMesh) {
+        // Negated so a prograde body (rotPeriodHours > 0) rotates eastward, matching Earth's
+        // convention (world RA increases with time). Without the negation every planet spun
+        // opposite to its true direction.
         const angle = planet.rotSign * ((timeMs * 0.001 * planet.rotSpeed) % (Math.PI * 2.0));
         planet.bodyMesh.rotation.y = -angle;
       }
@@ -387,6 +401,7 @@ export class PlanetarySystem {
     showDwarfCandidates = false
   ) {
     const timeMs = date ? date.getTime() : Date.now();
+    const jd = date ? toJulianDate(date) : null;
 
     this.smallBodies.forEach((body, id) => {
       const isSelected = selectedPlanetId === id;
@@ -410,9 +425,27 @@ export class PlanetarySystem {
       if (isMoonBody) {
         const offset = getMoonOffsetThreeJS(id, date);
         if (offset) body.group.position.set(offset.x, offset.y, offset.z);
-        // Tidally locked: keep the same face toward the parent.
-        if (body.bodyMesh) {
-          body.bodyMesh.rotation.y = -getMoonMeanAnomaly(id, date);
+        if (body.bodyPivot && jd !== null && hasIauSpin(id)) {
+          // Real IAU pole + spin. The moon's whole subtree (its group, its orbit ring) already sits
+          // inside the parent-equator pivot, so the pole is assigned in that same rotated frame:
+          // position and orientation then share one rotation, which preserves the relative
+          // geometry (the face-to-parent angle) exactly — a strict improvement on the old
+          // mean-anomaly approximation, with no frame mismatch introduced.
+          const q = iauPoleQuaternion(id, jd);
+          if (q) body.bodyPivot.quaternion.set(q[0], q[1], q[2], q[3]);
+          if (body.bodyMesh) body.bodyMesh.rotation.set(0, iauSpinAngleRad(id, jd), 0);
+        } else if (body.bodyMesh) {
+          const period = body.data ? body.data.rotPeriodHours : 0;
+          if (period && !isSynchronousMoon(id)) {
+            // Non-synchronous moon with a known spin (Hi'iaka, Hyperion…): spin at its own rate
+            // instead of being forced to keep one face toward the parent.
+            const rate = (2.0 * Math.PI) / (Math.abs(period) * 3600);
+            const sign = period > 0 ? 1 : -1;
+            body.bodyMesh.rotation.y = -sign * ((timeMs * 0.001 * rate) % (Math.PI * 2.0));
+          } else {
+            // Tidally locked (or unknown spin): keep the same face toward the parent.
+            body.bodyMesh.rotation.y = -getMoonMeanAnomaly(id, date);
+          }
         }
       } else {
         const pos = getDwarfPositionThreeJS(id, date, sunPos);
@@ -420,8 +453,12 @@ export class PlanetarySystem {
           body.group.position.set(pos.x, pos.y, pos.z);
           body.lastComputedPosition = { x: pos.x, y: pos.y, z: pos.z };
         }
-        // Sidereal rotation
-        if (body.rotSpeed && body.bodyMesh) {
+        // Axial orientation + sidereal rotation (same IAU-first rule as the planets above).
+        if (body.bodyPivot && jd !== null && hasIauSpin(id)) {
+          const q = iauPoleQuaternion(id, jd);
+          if (q) body.bodyPivot.quaternion.set(q[0], q[1], q[2], q[3]);
+          body.bodyMesh.rotation.set(0, iauSpinAngleRad(id, jd), 0);
+        } else if (body.rotSpeed && body.bodyMesh) {
           const angle = body.rotSign * ((timeMs * 0.001 * body.rotSpeed) % (Math.PI * 2.0));
           body.bodyMesh.rotation.y = -angle;
         }

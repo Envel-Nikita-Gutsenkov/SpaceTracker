@@ -123,6 +123,18 @@ export function getMoonMeanAnomaly(moonId, date) {
   return (el.M0Deg + el.nDegPerDay * (jd - el.epochJD)) * DEG2RAD;
 }
 
+// True when a moon's sidereal spin period equals its orbital period (within 1%), i.e. it is
+// tidally locked and its face must stay toward the parent. Hi'iaka, Namaka and Hyperion are
+// deliberately not locked. A body with no published spin period returns false.
+export function isSynchronousMoon(moonId) {
+  const m = getBodyData(moonId);
+  if (!m || m.bodyClass !== 'moon' || !m.elements) return false;
+  const period = m.rotPeriodHours;
+  if (!period) return false;
+  const expected = m.elements.periodDays * 24;
+  return Math.abs(period - expected) / Math.abs(expected) <= 0.01;
+}
+
 // Parent-relative orbit ring for a moon, in scene units (in the reference plane).
 export function getMoonOrbitPoints(moonId, steps = 160) {
   const m = getBodyData(moonId);

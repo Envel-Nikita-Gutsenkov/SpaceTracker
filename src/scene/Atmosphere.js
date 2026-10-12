@@ -118,20 +118,16 @@ export class Atmosphere {
       // dwarf planets and moons — the show/hide visibility for free. Earth sits at the scene
       // origin (it is rendered by Earth.js, not by PlanetarySystem).
       let parent = null;
-      let tiltRad = 0;
       if (id === 'earth') {
         parent = scene;
       } else if (planetarySystem) {
         const obj = planetarySystem.planets?.get(id) || planetarySystem.smallBodies?.get(id);
-        parent = obj?.group || null;
-        tiltRad = obj?.tiltRad || 0;
+        // Parent to the body's orientation pivot — it carries the real, time-dependent IAU pole
+        // (or the legacy fixed tilt), so the oblate shell hugs the true spin axis and needs no
+        // rotation of its own. Fall back to the group for stub systems that predate the pivot.
+        parent = obj?.bodyPivot || obj?.group || null;
       }
       if (!parent) continue;
-
-      // Align the oblate shell's polar axis with the body's spin axis (the body mesh carries the
-      // same tilt; the group itself is untilted).
-      mesh.rotation.order = 'ZYX';
-      mesh.rotation.z = -tiltRad;
 
       parent.add(mesh);
       mesh.visible = false;

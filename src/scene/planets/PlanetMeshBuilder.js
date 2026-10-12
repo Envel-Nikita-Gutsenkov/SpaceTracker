@@ -63,6 +63,15 @@ export class PlanetMeshBuilder {
     const group = new THREE.Group();
     group.name = `planet_${planetId}`;
 
+    // Orientation pivot. It carries the body's spin-axis orientation — either the legacy fixed
+    // tilt (below) or, for bodies with published IAU elements, the real time-dependent pole the
+    // system assigns each frame (see iauOrientation.js). The surface mesh, its rings and its
+    // atmosphere shell all hang off this pivot so they share one physical axis; the pivot spins
+    // nothing itself — the daily rotation is applied locally to `bodyMesh` about the pivot's +Y.
+    const pivot = new THREE.Group();
+    pivot.name = `pivot_${planetId}`;
+    group.add(pivot);
+
     // Radius in Three.js units (Earth radius R_earth = 6371 km = 1.0 unit)
     const radiusUnits = data.radiusKm / EARTH_RADIUS_KM;
 
@@ -126,17 +135,12 @@ export class PlanetMeshBuilder {
     // PlanetarySystem.dispose) — disposing it once would blank every other body.
     bodyMesh.userData.sharedGeometry = true;
 
-    // Tilt the body by its axial tilt relative to the orbital plane.
-    //
-    // MUST use 'ZYX' order: the tilt (Z) has to be applied first and the daily spin (Y) about the
-    // already-tilted axis. In the default 'XYZ' order the per-frame spin re-orients the tilt, so
-    // the pole drifts across latitudes over a single sidereal day (Pluto's sub-observer latitude
-    // swung from +21° down to -22° and back) and every tilted body's axis visibly wobbles. With
-    // 'ZYX' the rotation axis stays fixed in space.
+    // Legacy fixed tilt, used until (or unless) the system installs a real IAU pole on the pivot.
+    // Keeping it on the *pivot* rather than the mesh matters: the daily spin is then a pure local
+    // +Y rotation, so it can never re-orient the tilt (the old 'ZYX' workaround this replaces).
     const tiltRad = (data.axialTiltDeg || 0) * (Math.PI / 180.0);
-    bodyMesh.rotation.order = 'ZYX';
-    bodyMesh.rotation.z = -tiltRad;
-    group.add(bodyMesh);
+    pivot.rotation.z = -tiltRad;
+    pivot.add(bodyMesh);
 
     // 2. Planetary Rings (Saturn, Uranus, Haumea, Quaoar). Only bodies with published
     // inner/outer radii are drawn; the faint dwarf-planet rings are left to a future pass.
@@ -171,9 +175,10 @@ export class PlanetMeshBuilder {
         metalness: 0.1,
       });
 
+      // Added to the pivot (not the group): the ring geometry already lies in the equatorial
+      // plane, so it must inherit the body's spin-axis orientation and nothing else.
       ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.z = -tiltRad;
-      group.add(ringMesh);
+      pivot.add(ringMesh);
     }
 
     // 3. Compact visual beacon marker for extreme distance visibility (shared unit sphere,
@@ -207,6 +212,7 @@ export class PlanetMeshBuilder {
 
     return {
       group,
+      bodyPivot: pivot,
       bodyMesh,
       ringMesh,
       beaconMesh,
