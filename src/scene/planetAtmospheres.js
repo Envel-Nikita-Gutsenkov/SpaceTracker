@@ -15,8 +15,8 @@
 
 // height    – shell thickness as a fraction of the body's radius. Real scale, deliberately
 //             thin: Earth ~2%, Venus' dense deck ~4.5%, the giants ~1–2%, Titan's thick
-//             haze ~10%, Pluto's blue haze ~12%. This is why Titan/Pluto read as noticeably
-//             "thicker" — that is the true physics, not a stylistic choice.
+//             haze ~10%. Pluto's haze is real but optically thin (mostly seen in
+//             backscatter), so it is modelled as a conservative, faint shell.
 // color     – dominant scattering / aerosol hue (Rayleigh + haze).
 // intensity – peak alpha at the planet's limb (0..1), the visibility knob.
 export const ATMOSPHERE_BODIES = {
@@ -29,7 +29,7 @@ export const ATMOSPHERE_BODIES = {
   neptune: { height: 0.018, color: 0x6fb4ff, intensity: 0.50 },
   titan:   { height: 0.100, color: 0xf0a860, intensity: 0.60 },
   triton:  { height: 0.020, color: 0xd8c0c0, intensity: 0.30 },
-  pluto:   { height: 0.120, color: 0x8fd0ff, intensity: 0.40 },
+  pluto:   { height: 0.050, color: 0x8fd0ff, intensity: 0.16 },
 };
 
 // |N·V| at the planet's limb for a shell of relative height `h` and radius R1 = R0·(1+h):
