@@ -65,6 +65,7 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showDwarfPlanets, toggleShowDwarfPlanets,
     showDwarfCandidates, toggleShowDwarfCandidates,
     showMoons, toggleShowMoons,
+    showRealisticShapeModels, toggleShowRealisticShapeModels,
     showBodyPoints, toggleShowBodyPoints,
     showMoonPoints, toggleShowMoonPoints,
     showDeepSpaceProbes, toggleShowDeepSpaceProbes,
@@ -96,6 +97,7 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showDwarfPlanets: s.showDwarfPlanets, toggleShowDwarfPlanets: s.toggleShowDwarfPlanets,
     showDwarfCandidates: s.showDwarfCandidates, toggleShowDwarfCandidates: s.toggleShowDwarfCandidates,
     showMoons: s.showMoons, toggleShowMoons: s.toggleShowMoons,
+    showRealisticShapeModels: s.showRealisticShapeModels, toggleShowRealisticShapeModels: s.toggleShowRealisticShapeModels,
     showBodyPoints: s.showBodyPoints, toggleShowBodyPoints: s.toggleShowBodyPoints,
     showMoonPoints: s.showMoonPoints, toggleShowMoonPoints: s.toggleShowMoonPoints,
     showDeepSpaceProbes: s.showDeepSpaceProbes, toggleShowDeepSpaceProbes: s.toggleShowDeepSpaceProbes,
@@ -629,6 +631,17 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
                   <span className="cat-dot" style={{ background: '#c7bfae' }} />
                   <span className="cat-name">{t('natural_moons', 'Natural Moons')}</span>
                   <Toggle on={showMoons} onChange={toggleShowMoons} />
+                </div>
+
+                {/* NASA meshes replace the current shape only for bodies with a verified asset. */}
+                <div
+                  className="cat-item"
+                  title={t('realistic_shape_models_help', 'Uses NASA/JPL-Caltech meshes where available; other bodies keep their current shape.')}
+                  onClick={toggleShowRealisticShapeModels}
+                >
+                  <span className="cat-dot" style={{ background: '#38bdf8' }} />
+                  <span className="cat-name">{t('realistic_shape_models', 'NASA Shape Models (Phobos & Deimos)')}</span>
+                  <Toggle on={showRealisticShapeModels} onChange={toggleShowRealisticShapeModels} />
                 </div>
 
                 {/* Screen-space dots for every planet and dwarf (locate bodies at any zoom) */}

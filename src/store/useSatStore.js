@@ -35,6 +35,7 @@ export const useSatStore = create((set) => ({
   showDwarfCandidates: true, // Probable/candidate dwarf planets (not IAU-ratified) — a separate
                              // category, so it gets its own toggle instead of riding the one above.
   showMoons: false,        // Natural satellites of other planets stay hidden until enabled
+  showRealisticShapeModels: false, // Optional NASA body meshes; the current renderer remains the fallback
   showBodyPoints: false,   // Screen-space "there is something here" dots for planets + dwarfs (off by default)
   showMoonPoints: false,   // Separate point layer for every moon (off by default)
   showDeepSpaceProbes: false, // Interstellar probes (Voyager/Pioneer/New Horizons) markers stay hidden by default
@@ -156,6 +157,9 @@ export const useSatStore = create((set) => ({
 
   setShowMoons: (v) => set({ showMoons: v }),
   toggleShowMoons: () => set((state) => ({ showMoons: !state.showMoons })),
+
+  setShowRealisticShapeModels: (v) => set({ showRealisticShapeModels: v }),
+  toggleShowRealisticShapeModels: () => set((state) => ({ showRealisticShapeModels: !state.showRealisticShapeModels })),
 
   setShowBodyPoints: (v) => set({ showBodyPoints: v }),
   toggleShowBodyPoints: () => set((state) => ({ showBodyPoints: !state.showBodyPoints })),

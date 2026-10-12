@@ -27,6 +27,7 @@ import { isPlanetCloseUp } from '../../utils/planetaryLabels';
 import { isSegmentOccludedBySphere } from '../../utils/celestialOcclusion';
 import { PlanetMeshBuilder } from './PlanetMeshBuilder';
 import { TextureLODManager } from './TextureLODManager';
+import { SmallBodyShapeModels } from './SmallBodyShapeModels.js';
 
 // Camera distance (in planet radii) below which the planet is considered "strongly
 // zoomed": every other planet's orbit line is then removed from the view.
@@ -42,6 +43,7 @@ export class PlanetarySystem {
 
     this.planets = new Map();
     this.orbitLines = new Map();
+    this.smallBodyShapeModels = new SmallBodyShapeModels();
     this._lastOrbitUpdate = 0;
     this.isStrongZoom = false;
     this._tempV = new THREE.Vector3();
@@ -171,7 +173,8 @@ export class PlanetarySystem {
     showMoonPoints = false,
     // Candidate (non-IAU) dwarf planets are a separate, unratified category and therefore carry
     // their own visibility gate instead of riding `showDwarfPlanets`.
-    showDwarfCandidates = false
+    showDwarfCandidates = false,
+    showRealisticShapeModels = false
   ) {
     if (!sunPos) return;
 
@@ -379,7 +382,8 @@ export class PlanetarySystem {
       showMoons,
       showBodyPoints,
       showMoonPoints,
-      showDwarfCandidates
+      showDwarfCandidates,
+      showRealisticShapeModels
     );
   }
 
@@ -398,7 +402,8 @@ export class PlanetarySystem {
     showMoons,
     showBodyPoints = false,
     showMoonPoints = false,
-    showDwarfCandidates = false
+    showDwarfCandidates = false,
+    showRealisticShapeModels = false
   ) {
     const timeMs = date ? date.getTime() : Date.now();
     const jd = date ? toJulianDate(date) : null;
@@ -463,6 +468,14 @@ export class PlanetarySystem {
           body.bodyMesh.rotation.y = -angle;
         }
       }
+
+      // Keep the existing ellipsoid as the visible fallback until a verified NASA mesh has
+      // loaded. Point-only visibility does not trigger a model request.
+      this.smallBodyShapeModels?.setBodyEnabled(
+        id,
+        body,
+        Boolean(showRealisticShapeModels && isVisible && (showClass || isSelected || isFocused)),
+      );
 
       if (!isVisible) {
         body.group.visible = false;
@@ -662,6 +675,7 @@ export class PlanetarySystem {
     });
     this.planets.clear();
     this.smallBodies.forEach(body => {
+      this.smallBodyShapeModels.disposeBody(body);
       release(body.bodyMesh);
       release(body.ringMesh);
       release(body.beaconMesh);

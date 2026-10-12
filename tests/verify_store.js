@@ -42,10 +42,11 @@ const ALL_BODY_IDS = ['earth', 'moon', 'sun', 'cislunar', 'planetary', 'deepspac
 // 1. Defaults — including the gating of the new dwarf-planet / moon layers
 // ---------------------------------------------------------------------------
 TOTAL++;
-test('dwarf planets show by default; moons stay hidden until enabled', () => {
+test('dwarf planets show by default; moons and realistic shape models stay opt-in', () => {
   const s = useSatStore.getState();
   assert.equal(s.showDwarfPlanets, true, 'dwarf planets must default to shown');
   assert.equal(s.showMoons, false, 'natural moons must default to hidden');
+  assert.equal(s.showRealisticShapeModels, false, 'NASA shape meshes must default to off while they are tested');
 });
 
 TOTAL++;
@@ -56,6 +57,15 @@ test('mega-constellations are off by default, everything else is on', () => {
     assert.equal(visible.has(cat.id), !off.has(cat.id),
       `${cat.id} visibility default is wrong`);
   }
+});
+
+TOTAL++;
+test('realistic body shape-model setting toggles and can be set explicitly', () => {
+  const store = useSatStore.getState();
+  store.toggleShowRealisticShapeModels();
+  assert.equal(useSatStore.getState().showRealisticShapeModels, true);
+  useSatStore.getState().setShowRealisticShapeModels(false);
+  assert.equal(useSatStore.getState().showRealisticShapeModels, false);
 });
 
 // ---------------------------------------------------------------------------

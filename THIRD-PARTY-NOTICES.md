@@ -120,6 +120,17 @@ of its source master — downscaled and/or re-encoded — and so keeps the sourc
 license unchanged: the CC BY-SA maps (Pluto, Ganymede, Callisto, Phobos,
 Deimos) remain **CC BY-SA** as redistributed here.
 
+## Planetary body 3D shape models
+
+- **Phobos and Deimos** (`public/models/phobos.glb`,
+  `public/models/deimos.glb`) — NASA Science 3D models credited to
+  **NASA/JPL-Caltech**. Source pages:
+  <https://science.nasa.gov/resource/phobos-mars-moon-3d-model/> and
+  <https://science.nasa.gov/resource/deimos-mars-moon-3d-model/>.
+  The bundled GLBs are used only for their named bodies; NASA-provided mesh
+  dimensions agree with the catalogued triaxial axes to within 15%. Other bodies
+  continue to use the existing renderer unless a verified shape asset is added.
+
 ## Spacecraft 3D models
 
 - **NASA 3D Resources** — Hubble, Chandra, TESS, Swift, Terra, Aqua, Fermi,
