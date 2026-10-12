@@ -5,6 +5,8 @@ import {
   getSunPositionECI,
 } from '../utils/astronomy';
 import { SOLAR_SATS } from '../utils/celestialFleet';
+import { sampleConicRing, heliocentricConicThreeJS } from '../utils/conicPropagation';
+import { helioEclipticToThreeJS } from '../utils/ephemeris';
 
 // Radius of the close-range corona halo as a multiple of the photosphere radius. Keeps the
 // halo's angular size locked to the solar disc at every zoom level; the limb lands at the
@@ -399,21 +401,15 @@ export class SunObject {
     this.probeMeshes = [];
 
     this.solarSats.forEach(sat => {
-      // 1. Keplerian ellipse trajectory around Sun center
-      const a = (sat.perihelionUnits + sat.aphelionUnits) / 2;
-      const c = a - sat.perihelionUnits;
-      const b = Math.sqrt(Math.max(0.1, a * a - c * c));
-      const incRad = sat.incDeg * (Math.PI / 180);
-
-      const orbitPts = [];
-      const steps = 360;
-      for (let i = 0; i <= steps; i++) {
-        const theta = (i / steps) * Math.PI * 2;
-        const xOrb = a * Math.cos(theta) - c;
-        const yOrb = b * Math.sin(theta) * Math.sin(incRad);
-        const zOrb = b * Math.sin(theta) * Math.cos(incRad);
-        orbitPts.push(new THREE.Vector3(xOrb, yOrb, zOrb));
-      }
+      // 1. Real heliocentric osculating conic (ecliptic J2000, JPL Horizons). Sampling the ring
+      //    through conicPropagation + helioEclipticToThreeJS carries the true orbit plane
+      //    (inclination + ascending node) and line of apsides (argument of periapsis); a bare
+      //    "tilt a circle about X" would leave every probe's perihelion pointing the same way.
+      const auPts = sampleConicRing(sat.elements, 512);
+      const orbitPts = auPts.map(([x, y, z]) => {
+        const r = helioEclipticToThreeJS(x, y, z);
+        return new THREE.Vector3(r.x, r.y, r.z);
+      });
       const lineGeo = new THREE.BufferGeometry().setFromPoints(orbitPts);
       const lineMat = new THREE.LineBasicMaterial({
         color: sat.color || 0xf59e0b,
@@ -434,11 +430,7 @@ export class SunObject {
         mesh: probeModel.group,
         ringMesh: probeModel.ringMesh,
         orbitTrace,
-        a,
-        b,
-        c,
-        incRad,
-        periodMs: sat.periodMin * 60 * 1000,
+        elements: sat.elements,
       });
     });
 
@@ -879,17 +871,15 @@ export class SunObject {
     // Update heliophysics fleet (Parker Solar Probe, Solar Orbiter, SOHO)
     if (this.probeGroup) {
       this.probeGroup.position.copy(sunPos);
-      const timeMs = date ? date.getTime() : Date.now();
+      const probeDate = date || new Date();
       this.probeMeshes.forEach(item => {
         // Orbit line is ONLY visible if clicked/selected, or if user toggled 'All Orbits'
         const isSelected = selectedSatId && (item.sat.id === selectedSatId || item.sat.noradId === selectedSatId);
         item.orbitTrace.visible = Boolean(isSelected || showAllOrbits);
 
-        const u = ((timeMs % item.periodMs) / item.periodMs) * Math.PI * 2;
-        const xOrb = item.a * Math.cos(u) - item.c;
-        const yOrb = item.b * Math.sin(u) * Math.sin(item.incRad);
-        const zOrb = item.b * Math.sin(u) * Math.cos(item.incRad);
-        item.mesh.position.set(xOrb, yOrb, zOrb);
+        // True heliocentric position on the osculating conic (scene units, relative to the Sun).
+        const res = heliocentricConicThreeJS(item.elements, probeDate);
+        item.mesh.position.set(res.rel.x, res.rel.y, res.rel.z);
 
         // Orient heat shield (+Z axis) directly towards the blazing Sun center
         item.mesh.lookAt(0, 0, 0);

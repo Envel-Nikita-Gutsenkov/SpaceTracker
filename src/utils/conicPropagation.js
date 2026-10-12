@@ -120,17 +120,30 @@ export function heliocentricConicThreeJS(elements, date) {
 // outward until the radius exceeds `maxRadiusAu`, capped at `maxPoints` samples.
 export function sampleConicTrajectory(elements, maxRadiusAu = 320, maxPoints = 480, outboundOnly = false) {
   const points = [];
-  if (!(maxRadiusAu > 0)) return points;
+  const hyperbolic = !(elements.e < 1);
 
   // Sample in true-anomaly-like parameter space (eccentric/hyperbolic anomaly).
-  const upper = elements.e < 1 ? Math.PI : Math.acosh(Math.max(1.0, 1 + maxRadiusAu / Math.max(1e-9, elementsDistanceScale(elements))));
-  if (!Number.isFinite(upper)) return points;
+  // A bound ellipse is always traced over the full 0..2π range; an unbound hyperbola is traced
+  // only out to where its radius reaches `maxRadiusAu`. `maxRadiusAu` is in AU while
+  // `elementsDistanceScale` is in km, so reconcile the units before inverting
+  // r = a (1 - e cosh H) => cosh H = (1 + r / |a|) / e. (The previous code compared an AU bound
+  // against a km scale and omitted the 1/e, collapsing every escape trail to a dot at periapsis.)
+  let upper;
+  if (hyperbolic) {
+    if (!(maxRadiusAu > 0)) return points;
+    const maxRadiusKm = maxRadiusAu * AU_KM;
+    const coshH = (1 + maxRadiusKm / Math.max(1e-9, elementsDistanceScale(elements))) / elements.e;
+    upper = Math.acosh(Math.max(1, coshH));
+    if (!Number.isFinite(upper)) return points;
+  } else {
+    upper = Math.PI;
+  }
 
   const steps = Math.max(16, Math.min(maxPoints, Math.round(upper * 24)));
   // An escaping probe only travels the outbound branch (from periapsis outward), so
   // when asked we trace just that half instead of the mirror-image inbound branch.
-  const hStart = outboundOnly && elements.e >= 1 ? 0 : -upper;
-  const hSpan = outboundOnly && elements.e >= 1 ? upper : 2 * upper;
+  const hStart = outboundOnly && hyperbolic ? 0 : -upper;
+  const hSpan = outboundOnly && hyperbolic ? upper : 2 * upper;
   for (let i = 0; i <= steps; i++) {
     const H = hStart + hSpan * (i / steps);
 
@@ -162,6 +175,46 @@ export function sampleConicTrajectory(elements, maxRadiusAu = 320, maxPoints = 4
     const Qy = -sinW * sinNode + cosW * cosNode * cosInc;
     const Qz = cosW * sinInc;
 
+    points.push([
+      (xPrime * Px + yPrime * Qx) / AU_KM,
+      (xPrime * Py + yPrime * Qy) / AU_KM,
+      (xPrime * Pz + yPrime * Qz) / AU_KM,
+    ]);
+  }
+  return points;
+}
+
+// Closed orbit ring for a bound (elliptical) conic, sampled uniformly in eccentric anomaly and
+// returned as ecliptic-AU points. `sampleConicTrajectory` bounds its arc for hyperbolae and only
+// coarsely samples an ellipse; this always emits `steps + 1` points so a rendered ring is smooth
+// at any eccentricity. Unbound conics fall back to the trajectory sampler.
+export function sampleConicRing(elements, steps = 512) {
+  const e = elements.e;
+  if (!(e < 1)) return sampleConicTrajectory(elements, 320, steps);
+
+  const a = elements.aKm > 0 ? elements.aKm : elements.qKm / (1 - e);
+  const b = a * Math.sqrt(Math.max(0, 1 - e * e));
+
+  const inc = elements.iDeg * DEG2RAD;
+  const node = elements.nodeDeg * DEG2RAD;
+  const argPeri = elements.argPeriDeg * DEG2RAD;
+  const cosNode = Math.cos(node), sinNode = Math.sin(node);
+  const cosInc = Math.cos(inc), sinInc = Math.sin(inc);
+  const cosW = Math.cos(argPeri), sinW = Math.sin(argPeri);
+
+  const Px = cosW * cosNode - sinW * sinNode * cosInc;
+  const Py = cosW * sinNode + sinW * cosNode * cosInc;
+  const Pz = sinW * sinInc;
+  const Qx = -sinW * cosNode - cosW * sinNode * cosInc;
+  const Qy = -sinW * sinNode + cosW * cosNode * cosInc;
+  const Qz = cosW * sinInc;
+
+  const n = Math.max(8, Math.floor(steps));
+  const points = [];
+  for (let i = 0; i <= n; i++) {
+    const E = (i / n) * 2 * Math.PI;
+    const xPrime = a * (Math.cos(E) - e);
+    const yPrime = b * Math.sin(E);
     points.push([
       (xPrime * Px + yPrime * Qx) / AU_KM,
       (xPrime * Py + yPrime * Qy) / AU_KM,

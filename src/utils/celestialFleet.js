@@ -1,5 +1,27 @@
-import { AU_UNITS } from './astronomy.js';
+import { AU_KM, AU_UNITS } from './astronomy.js';
 
+// Derive the flat display fields the store/UI read from the authoritative osculating elements,
+// so the elements stay the single source of truth (guarded by tests/verify_solar_probe_orbits.js).
+function withDerivedSolarFields(sat) {
+  const el = sat.elements;
+  return {
+    ...sat,
+    perihelionUnits: (el.qKm / AU_KM) * AU_UNITS,
+    aphelionUnits: ((el.aKm * (1 + el.e)) / AU_KM) * AU_UNITS,
+    periodMin: 360 / el.nDegPerSec / 60,
+    incDeg: el.iDeg,
+    inclination: el.iDeg,
+    eccentricity: el.e,
+  };
+}
+
+// Sun-orbiting probe fleet: real heliocentric osculating conics from NASA/JPL Horizons
+// (EPHEM_TYPE=ELEMENTS, reference frame "Ecliptic of J2000.0", center Sun (10), epoch
+// 2025-Jan-01 00:00 TDB = JD 2460676.5). Propagating these with conicPropagation.js gives each
+// probe its true orbit plane (inclination + ascending node), line of apsides (argument of
+// periapsis) and phase (Tp) instead of a circle tilted about a single axis.
+// Source: https://ssd.jpl.nasa.gov/api/horizons.api — queries pinned in
+// tests/verify_solar_probe_orbits.js.
 export const SOLAR_SATS = [
   {
     id: 43600,
@@ -10,10 +32,17 @@ export const SOLAR_SATS = [
     country: 'US',
     launchDate: '2018-08-12',
     objectType: 'PAYLOAD',
-    perihelionUnits: 0.046 * AU_UNITS,
-    aphelionUnits:   0.730 * AU_UNITS,
-    periodMin: 88 * 1440, // 88 days
-    incDeg: 3.4,
+    epochJd: 2460676.5,
+    elements: {
+      e: 0.8819207054054172,
+      aKm: 5.811767816454195e7,
+      qKm: 6.862494441144112e6,
+      iDeg: 3.395363945898496,
+      nodeDeg: 76.64956133644479,
+      argPeriDeg: 68.45492876487289,
+      Tp: 2460668.987600884866,
+      nDegPerSec: 4.711032127837081e-5,
+    },
     color: 0xf59e0b,
     speedKmS: '635.0 km/s (Peak Perihelion)',
     desc: 'Fastest human-made object in history, directly sampling the solar corona at 9.88 solar radii with an advanced carbon-composite thermal heat shield.',
@@ -21,8 +50,6 @@ export const SOLAR_SATS = [
     wikiUrl: 'https://en.wikipedia.org/wiki/Parker_Solar_Probe',
     category: 'science',
     isSolar: true,
-    eccentricity: 0.88,
-    inclination: 3.4,
     keywords: 'solar probe parker nasa sun corona perihelion зонд паркер солнце',
   },
   {
@@ -34,10 +61,17 @@ export const SOLAR_SATS = [
     country: 'EU',
     launchDate: '2020-02-10',
     objectType: 'PAYLOAD',
-    perihelionUnits: 0.280 * AU_UNITS,
-    aphelionUnits:   0.910 * AU_UNITS,
-    periodMin: 168 * 1440, // 168 days
-    incDeg: 24.0,
+    epochJd: 2460676.5,
+    elements: {
+      e: 0.5305671640643448,
+      aKm: 9.325826994947228e7,
+      qKm: 4.377849413683367e7,
+      iDeg: 4.149079775950933,
+      nodeDeg: 351.2032127168048,
+      argPeriDeg: 274.0020752994180,
+      Tp: 2460764.115809450857,
+      nDegPerSec: 2.317647684583041e-5,
+    },
     color: 0x38bdf8,
     speedKmS: '45.2 km/s',
     desc: 'High-resolution imaging and in-situ measurement of the unexplored solar polar regions and inner heliosphere.',
@@ -45,8 +79,6 @@ export const SOLAR_SATS = [
     wikiUrl: 'https://en.wikipedia.org/wiki/Solar_Orbiter',
     category: 'science',
     isSolar: true,
-    eccentricity: 0.53,
-    inclination: 24.0,
     keywords: 'solar orbiter solo esa nasa sun poles солар орбитер',
   },
   {
@@ -58,10 +90,17 @@ export const SOLAR_SATS = [
     country: 'EU',
     launchDate: '1995-12-02',
     objectType: 'PAYLOAD',
-    perihelionUnits: 0.985 * AU_UNITS,
-    aphelionUnits:   0.995 * AU_UNITS,
-    periodMin: 365 * 1440, // 1 year
-    incDeg: 1.5,
+    epochJd: 2460676.5,
+    elements: {
+      e: 0.02098352476518100,
+      aKm: 1.428541506706341e8,
+      qKm: 1.398565670622279e8,
+      iDeg: 0.07833771417070889,
+      nodeDeg: 292.5297292527820,
+      argPeriDeg: 341.8740082540517,
+      Tp: 2460841.132287921384,
+      nDegPerSec: 1.222472657676203e-5,
+    },
     color: 0xa855f7,
     speedKmS: '30.1 km/s',
     desc: 'Continuous real-time solar flare, coronal mass ejection (CME), and helioseismology early warning monitor at Sun-Earth L1.',
@@ -69,8 +108,6 @@ export const SOLAR_SATS = [
     wikiUrl: 'https://en.wikipedia.org/wiki/Solar_and_Heliospheric_Observatory',
     category: 'science',
     isSolar: true,
-    eccentricity: 0.005,
-    inclination: 1.5,
     keywords: 'soho solar heliospheric observatory cme flare l1 esa nasa сохо солнце',
   },
   {
@@ -82,10 +119,17 @@ export const SOLAR_SATS = [
     country: 'US',
     launchDate: '2006-10-26',
     objectType: 'PAYLOAD',
-    perihelionUnits: 0.950 * AU_UNITS,
-    aphelionUnits:   0.970 * AU_UNITS,
-    periodMin: 347 * 1440, // 347 days
-    incDeg: 0.1,
+    epochJd: 2460676.5,
+    elements: {
+      e: 0.006740689714223385,
+      aKm: 1.437365515408558e8,
+      qKm: 1.427676680463264e8,
+      iDeg: 0.1279209872422879,
+      nodeDeg: 212.3840089467320,
+      argPeriDeg: 77.06990736240924,
+      Tp: 2460829.277672221884,
+      nDegPerSec: 1.211232785091081e-5,
+    },
     color: 0x22c55e,
     speedKmS: '31.2 km/s',
     desc: 'Stereoscopic solar imaging mission orbiting ahead of Earth to construct 3D models of coronal mass ejections.',
@@ -93,8 +137,6 @@ export const SOLAR_SATS = [
     wikiUrl: 'https://en.wikipedia.org/wiki/STEREO',
     category: 'science',
     isSolar: true,
-    eccentricity: 0.01,
-    inclination: 0.1,
     keywords: 'stereo stereo-a nasa solar probe cme sun стерео стерео-а солнце',
   },
   {
@@ -106,10 +148,17 @@ export const SOLAR_SATS = [
     country: 'IN',
     launchDate: '2023-09-02',
     objectType: 'PAYLOAD',
-    perihelionUnits: 0.988 * AU_UNITS,
-    aphelionUnits:   0.992 * AU_UNITS,
-    periodMin: 365 * 1440, // 1 year
-    incDeg: 2.1,
+    epochJd: 2460676.5,
+    elements: {
+      e: 0.02792389788764402,
+      aKm: 1.419165554968616e8,
+      qKm: 1.379536920926011e8,
+      iDeg: 0.04893254277251156,
+      nodeDeg: 163.3845376477520,
+      argPeriDeg: 115.3261417741914,
+      Tp: 2460843.547649560962,
+      nDegPerSec: 1.234607346558361e-5,
+    },
     color: 0xf97316,
     speedKmS: '30.2 km/s',
     desc: "India's premier solar coronagraph observatory studying the solar chromosphere, corona dynamics, and coronal heating at Sun-Earth L1.",
@@ -117,11 +166,9 @@ export const SOLAR_SATS = [
     wikiUrl: 'https://en.wikipedia.org/wiki/Aditya-L1',
     category: 'science',
     isSolar: true,
-    eccentricity: 0.002,
-    inclination: 2.1,
     keywords: 'aditya aditya-l1 isro solar probe sun corona india адитья солнце',
   },
-];
+].map(withDerivedSolarFields);
 
 export const LUNAR_SATS = [
   {

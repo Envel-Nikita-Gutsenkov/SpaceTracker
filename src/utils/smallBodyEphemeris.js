@@ -10,7 +10,7 @@
 import { AU_KM } from './planetaryData.js';
 import { toJulianDate } from './astronomy.js';
 import { helioEclipticToThreeJS } from './ephemeris.js';
-import { solveEllipticKepler, heliocentricConicThreeJS, sampleConicTrajectory } from './conicPropagation.js';
+import { solveEllipticKepler, heliocentricConicThreeJS, sampleConicRing } from './conicPropagation.js';
 import { getBodyData } from './smallBodies.js';
 
 const DEG2RAD = Math.PI / 180;
@@ -70,11 +70,14 @@ export function getDwarfPositionThreeJS(id, date, sunPosScene) {
   };
 }
 
-// Full closed-orbit ring for a dwarf planet, in scene coordinates.
+// Full closed-orbit ring for a dwarf planet, in scene coordinates. Dwarf elements are always
+// bound (e < 1), so the uniform-in-eccentric-anomaly ring sampler is used directly — the old
+// `sampleConicTrajectory(elements, 0, steps)` call passed a zero radius bound and returned an
+// empty array, so every dwarf orbit line rendered with no geometry at all.
 export function getDwarfOrbitPoints(id, sunPosScene, steps = 512) {
   const elements = dwarfConicElements(id);
   if (!elements) return [];
-  const auPts = sampleConicTrajectory(elements, 0, steps);
+  const auPts = sampleConicRing(elements, steps);
   return auPts.map(([x, y, z]) => {
     const r = helioEclipticToThreeJS(x, y, z);
     return { x: sunPosScene.x + r.x, y: sunPosScene.y + r.y, z: sunPosScene.z + r.z };
