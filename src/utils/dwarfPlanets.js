@@ -500,9 +500,96 @@ export const DWARF_PLANETS = {
     elements: { e: 0.1067092741240963, aAU: 3.150974033963701, iDeg: 3.829529946447122, nodeDeg: 283.1198927508594, argPeriDeg: 312.4242387344704, Tp: 2461813.200828681790, nDegPerDay: 0.1762125505792448, epochJD: 2461200.5 },
     source: 'JPL SBDB (sstr=hygiea, epoch 2461200.5) + Wikipedia (10 Hygiea; Vernazza et al. 2021, Fuentes-Munoz 2025)',
   },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=varuna&phys-par=1&full-prec=1
+  // Physical (Wikipedia, 20000 Varuna): mean diameter 678 km (2013 and 2014 stellar
+  // occultations) -> radius 339 km. Fast rotator, 6.3436 h. No published mass (no confirmed
+  // moon), so mass is an explicit estimate from the radius assuming a bulk density of
+  // 0.992 g/cm3 (from the light-curve shape solution). Axial tilt unmeasured: 0.
+  varuna: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 339,
+    massKg: 1.6e20,
+    rotPeriodHours: 6.3436,
+    axialTiltDeg: 0.0,
+    colorHex: 0x8f5a44,
+    orbitColor: '#7c2d12',
+    glowColor: '#e8a87c',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Varuna',
+    nameRu: 'Варуна',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A large, fast-rotating classical Kuiper Belt object (20000 Varuna), moderately red and probably strongly elongated.',
+    descRu: 'Крупный быстро вращающийся объект классического пояса Койпера (20000 Варуна), умеренно красный и, вероятно, сильно вытянутый.',
+    elements: { e: 0.05161543734827757, aAU: 43.2000227503935, iDeg: 17.14054429876356, nodeDeg: 97.21583412147274, argPeriDeg: 273.3589746671601, Tp: 2427878.215564044025, nDegPerDay: 0.00347118779898972, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=varuna, epoch 2461200.5) + Wikipedia (20000 Varuna; 2013/2014 occultations) [mass estimated at 0.992 g/cm3]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=229762&phys-par=1&full-prec=1
+  // (229762 G!kun||'homdima, formerly 2007 UK126.) Physical (Wikipedia, 229762
+  // G!kun||'homdima): effective (equivalent-sphere) diameter 600-670 km -> radius ~317.5 km;
+  // the body is distinctly non-spherical. System mass (1.36 +/- 0.03)e20 kg (Grundy et al.
+  // 2019); the moon holds ~1%, so ~1.35e20 kg is used for the primary. Rotation: the
+  // light-curve amplitude is tiny and the shape irregular, so the period is uncertain;
+  // 11.05 h is the published simplest solution (true value somewhere between ~11 and 41 h).
+  // Axial tilt unmeasured: 0.
+  gkunhomdima: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 317.5,
+    massKg: 1.35e20,
+    rotPeriodHours: 11.05,
+    axialTiltDeg: 0.0,
+    colorHex: 0x8a6a55,
+    orbitColor: '#7a4a35',
+    glowColor: '#cfa98f',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Gǃkúnǁʼhòmdímà',
+    nameRu: 'Гкунхомдима',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A mid-sized red scattered-disc object (229762 Gǃkúnǁʼhòmdímà) with a moon and an unusually low density, its surface rich in water and carbon-dioxide ice.',
+    descRu: 'Средний по размеру красный объект рассеянного диска (229762 Гкунхомдима) со спутником и необычно низкой плотностью; поверхность богата водяным льдом и льдом углекислого газа.',
+    elements: { e: 0.4957816282699332, aAU: 74.50819049288985, iDeg: 23.32953536634301, nodeDeg: 131.2505901829532, argPeriDeg: 346.0576265153255, Tp: 2468378.860810121314, nDegPerDay: 0.001532491412344953, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=229762, epoch 2461200.5) + Wikipedia (229762 G!kun||\'homdima; Grundy et al. 2019) [system mass 1.36e20 kg, moon ~1%]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=interamnia&phys-par=1&full-prec=1
+  // Physical (Wikipedia, 704 Interamnia): mean diameter ~332 km (VLT/SPHERE, Hanus et al.
+  // 2020) -> radius 166 km; roughly ellipsoidal but near-spherical (c/a ~0.86), so no
+  // explicit `shape`. Mass ~3.8e19 kg (metastatistical estimate, Hanus et al. 2019).
+  // Rotation 8.727 h. Axial tilt unmeasured: 0.
+  interamnia: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 166,
+    massKg: 3.8e19,
+    rotPeriodHours: 8.727,
+    axialTiltDeg: 0.0,
+    colorHex: 0x4c4a46,
+    orbitColor: '#3f3d3a',
+    glowColor: '#8c8a85',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Interamnia',
+    nameRu: 'Интерамния',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'The fifth-largest asteroid in the belt (704 Interamnia), a dark, carbon-rich F-type body and a probable dwarf planet.',
+    descRu: 'Пятый по величине астероид пояса (704 Интерамния) — тёмное, богатое углеродом тело F-типа и вероятная карликовая планета.',
+    elements: { e: 0.1550586536072489, aAU: 3.056811711282865, iDeg: 17.31528178196839, nodeDeg: 280.1672242333686, argPeriDeg: 94.06172596616008, Tp: 2461953.441016414886, nDegPerDay: 0.1844170374508765, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=interamnia, epoch 2461200.5) + Wikipedia (704 Interamnia; Hanus et al. 2020, 2019)',
+  },
 };
 
-export const ORDERED_DWARF_KEYS = ['ceres','orcus','haumea','quaoar','makemake','gonggong','eris','sedna','salacia','varda','ixion','mani','aya','achlys','uni','hygiea'];
+export const ORDERED_DWARF_KEYS = ['ceres','orcus','haumea','quaoar','makemake','gonggong','eris','sedna','salacia','varda','ixion','mani','aya','achlys','uni','hygiea','varuna','gkunhomdima','interamnia'];
 
 // The four IAU-designated dwarf planets carried by this registry (Pluto, the fifth, lives in
 // PLANETARY_ELEMENTS_J2000). Everything else in ORDERED_DWARF_KEYS is a probable/candidate body.

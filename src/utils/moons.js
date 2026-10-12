@@ -1330,6 +1330,30 @@ export const MOONS = {
     source: 'Varda/Ilmarë mutual orbit: Grundy et al. (2015) Icarus 257:130 and Kiss et al. (2025) (a=4815±29 km, e=0.016±0.004, i=77.4±1.9 deg, P=5.750824 d); radius ~201.5 km (diameter 403 km): Kiss et al. (2025). node/argPeri/M0 not published (set 0); mass ~3.3e19 kg estimated from the ~12–14 % system share (uncertain).',
     referencePlane: 'Varda equator (assumed)',
   },
+
+  // G!kun||'homdima I — Grundy et al. (2019) Icarus 334:30. a is the primary-moon separation.
+  goehu: {
+    bodyClass: 'moon',
+    parentId: 'gkunhomdima',
+    radiusKm: 71,
+    massKg: 1.5e18,
+    rotPeriodHours: 271.2,
+    axialTiltDeg: 0,
+    colorHex: 0x8a3a2a,
+    orbitColor: '#6e2b1e',
+    glowColor: '#c97a63',
+    hasRings: false,
+    atmosphere: false,
+    nameEn: 'Gǃòʼé ǃHú',
+    nameRu: 'Гоэху',
+    typeEn: 'Moon of Gǃkúnǁʼhòmdímà',
+    typeRu: 'Спутник Гкунхомдимы',
+    descEn: 'The only known moon of Gǃkúnǁʼhòmdímà, a small, unusually red body on a wide, nearly circular orbit.',
+    descRu: 'Единственный известный спутник Гкунхомдимы — небольшое, необычно красное тело на широкой почти круговой орбите.',
+    elements: { aKm: 6000, e: 0.0, iDeg: 90.0, nodeDeg: 0.0, argPeriDeg: 0.0, M0Deg: 0.0, periodDays: 11.3, nDegPerDay: 31.858, epochJD: 2451545.0 },
+    source: 'Grundy et al. (2019) Icarus 334:30 (a~6000 km, P=11.3 d, e~0, prograde; system mass 1.36e20 kg); radius ~71 km and mass ~1.5e18 kg derived from the 3.24 mag primary-moon contrast; assumed tidally locked. node/argPeri/M0 not published (set 0); orbit option near edge-on (mutual occultations from ~2050).',
+    referencePlane: 'Ecliptic (near edge-on to Earth)',
+  },
 };
 
-export const ORDERED_MOON_KEYS = ['phobos','deimos','metis','adrastea','amalthea','thebe','io','europa','ganymede','callisto','pan','atlas','prometheus','pandora','janus','epimetheus','mimas','enceladus','helene','tethys','dione','rhea','titan','hyperion','iapetus','puck','miranda','ariel','umbriel','titania','oberon','naiad','thalassa','despina','galatea','larissa','proteus','triton','charon','styx','nix','kerberos','hydra','dysnomia','hiiaka','namaka','mk2','xiangliu','weywot','vanth','actaea','ilmare'];
+export const ORDERED_MOON_KEYS = ['phobos','deimos','metis','adrastea','amalthea','thebe','io','europa','ganymede','callisto','pan','atlas','prometheus','pandora','janus','epimetheus','mimas','enceladus','helene','tethys','dione','rhea','titan','hyperion','iapetus','puck','miranda','ariel','umbriel','titania','oberon','naiad','thalassa','despina','galatea','larissa','proteus','triton','charon','styx','nix','kerberos','hydra','dysnomia','hiiaka','namaka','mk2','xiangliu','weywot','vanth','actaea','ilmare','goehu'];

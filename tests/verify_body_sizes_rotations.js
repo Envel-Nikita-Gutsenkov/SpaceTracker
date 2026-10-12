@@ -33,6 +33,7 @@ const DWARF_RADII_KM = {
   ceres: 469.7, orcus: 455, haumea: 772, quaoar: 549, makemake: 715,
   gonggong: 615, eris: 1163, sedna: 498, salacia: 419,
   varda: 324, ixion: 348.4, mani: 398, aya: 384, achlys: 353, uni: 305, hygiea: 216.5,
+  varuna: 339, gkunhomdima: 317.5, interamnia: 166,
 };
 
 const MOON_RADII_KM = {

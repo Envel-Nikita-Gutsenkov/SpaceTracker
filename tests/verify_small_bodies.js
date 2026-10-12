@@ -18,8 +18,8 @@ console.log('Small bodies (dwarf planets & moons) tests');
 
 // --- Data integrity -------------------------------------------------------
 
-test('dwarf planet catalogue holds every registered body (16: 4 IAU-official + 12 candidates)', () => {
-  assert.equal(ORDERED_DWARF_KEYS.length, 16, `expected 16 dwarf keys, got ${ORDERED_DWARF_KEYS.length}`);
+test('dwarf planet catalogue holds every registered body (19: 4 IAU-official + 15 candidates)', () => {
+  assert.equal(ORDERED_DWARF_KEYS.length, 19, `expected 19 dwarf keys, got ${ORDERED_DWARF_KEYS.length}`);
   for (const k of ORDERED_DWARF_KEYS) assert.ok(DWARF_PLANETS[k], `missing dwarf entry: ${k}`);
   assert.ok(!ORDERED_DWARF_KEYS.includes('pluto'), 'Pluto must not be duplicated here');
 });
