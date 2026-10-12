@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { DWARF_PLANETS, ORDERED_DWARF_KEYS, MOONS, ORDERED_MOON_KEYS, ALL_BODIES } from '../src/utils/smallBodies.js';
+import { DWARF_PLANETS, ORDERED_DWARF_KEYS, OFFICIAL_DWARF_KEYS, isOfficialDwarf, MOONS, ORDERED_MOON_KEYS, ALL_BODIES } from '../src/utils/smallBodies.js';
 import { getDwarfPositionThreeJS, getMoonOffsetThreeJS, getMoonOrbitPoints } from '../src/utils/smallBodyEphemeris.js';
 import { PLANETARY_ELEMENTS_J2000, ORDERED_PLANET_KEYS, AU_KM } from '../src/utils/planetaryData.js';
 import { EARTH_RADIUS_KM } from '../src/utils/astronomy.js';
@@ -18,10 +18,24 @@ console.log('Small bodies (dwarf planets & moons) tests');
 
 // --- Data integrity -------------------------------------------------------
 
-test('dwarf planet catalogue has exactly the nine approved bodies', () => {
-  assert.equal(ORDERED_DWARF_KEYS.length, 9, `expected 9 dwarf keys, got ${ORDERED_DWARF_KEYS.length}`);
+test('dwarf planet catalogue holds every registered body (16: 4 IAU-official + 12 candidates)', () => {
+  assert.equal(ORDERED_DWARF_KEYS.length, 16, `expected 16 dwarf keys, got ${ORDERED_DWARF_KEYS.length}`);
   for (const k of ORDERED_DWARF_KEYS) assert.ok(DWARF_PLANETS[k], `missing dwarf entry: ${k}`);
   assert.ok(!ORDERED_DWARF_KEYS.includes('pluto'), 'Pluto must not be duplicated here');
+});
+
+test('every dwarf carries an IAU recognition flag and the official set is exactly the four', () => {
+  const official = [];
+  for (const k of ORDERED_DWARF_KEYS) {
+    const rec = DWARF_PLANETS[k].recognition;
+    assert.ok(rec === 'official' || rec === 'candidate', `${k}: bad recognition '${rec}'`);
+    if (rec === 'official') official.push(k);
+  }
+  assert.deepEqual(official.sort(), ['ceres', 'eris', 'haumea', 'makemake'],
+    'the IAU-designated dwarf planets in this registry must be exactly Ceres, Eris, Haumea, Makemake');
+  assert.equal(isOfficialDwarf('ceres'), true);
+  assert.equal(isOfficialDwarf('quaoar'), false);
+  assert.deepEqual([...OFFICIAL_DWARF_KEYS].sort(), ['ceres', 'eris', 'haumea', 'makemake']);
 });
 
 test('moon catalogue is present and complete', () => {
@@ -118,8 +132,10 @@ test('moon offset magnitude tracks the semi-major axis and orbit ring closes', (
 test('small bodies default sensibly and stay gated behind explicit toggles', () => {
   const store = fs.readFileSync(path.resolve('src/store/useSatStore.js'), 'utf8');
   assert.match(store, /showDwarfPlanets:\s*true/, 'dwarf planets must default ON');
+  assert.match(store, /showDwarfCandidates:\s*true/, 'dwarf-planet candidates must default ON');
   assert.match(store, /showMoons:\s*false/, 'moons must default OFF');
   assert.match(store, /toggleShowDwarfPlanets/, 'missing dwarf toggle');
+  assert.match(store, /toggleShowDwarfCandidates/, 'missing dwarf-candidate toggle');
   assert.match(store, /toggleShowMoons/, 'missing moon toggle');
 });
 
@@ -127,8 +143,9 @@ test('the render system creates and gates dwarfs and moons', () => {
   const src = fs.readFileSync(path.resolve('src/scene/planets/PlanetarySystem.js'), 'utf8');
   assert.match(src, /ORDERED_DWARF_KEYS/, 'dwarfs must be built from the registry');
   assert.match(src, /ORDERED_MOON_KEYS/, 'moons must be built from the registry');
-  assert.match(src, /showDwarfPlanets \|\| isSelected \|\| isFocused/, 'dwarfs must obey the toggle/selection gate');
-  assert.match(src, /showClass \|\| isSelected \|\| isFocused/, 'moons must obey the toggle/selection gate');
+  assert.match(src, /showClass \|\| isSelected \|\| isFocused/, 'small bodies must obey the toggle/selection gate');
+  assert.match(src, /isOfficialDwarf\(id\) \? showDwarfPlanets : showDwarfCandidates/,
+    'official dwarfs and candidate dwarfs must be gated by their own flags');
   assert.match(src, /obj\.group\.visible = false/, 'small bodies must start hidden');
 });
 
@@ -146,10 +163,14 @@ test('hidden categories are excluded from the selector and search lists', () => 
   // entry: it has no live position to fly to and would read as a dead row in the list.
   const bar = fs.readFileSync(path.resolve('src/components/PlanetBar.jsx'), 'utf8');
   const search = fs.readFileSync(path.resolve('src/components/SearchBar.jsx'), 'utf8');
-  assert.match(bar, /showDwarfPlanets\s*\?\s*dwarfItems\s*:\s*\[\]/, 'PlanetBar must drop dwarfs when the toggle is off');
+  assert.match(bar, /showDwarfPlanets\s*\?[\s\S]*?dwarfItems\.filter\(d => d\.recognition === 'official'\)/,
+    'PlanetBar must gate IAU dwarfs on their own toggle');
+  assert.match(bar, /showDwarfCandidates\s*\?[\s\S]*?dwarfItems\.filter\(d => d\.recognition !== 'official'\)/,
+    'PlanetBar must gate candidate dwarfs on their own toggle');
   assert.match(bar, /showMoons\s*\?\s*moonItems\s*:\s*\[\]/, 'PlanetBar must drop moons when the toggle is off');
-  assert.match(search, /showDwarfPlanets\s*\?[\s\S]*?ORDERED_DWARF_KEYS/, 'SearchBar must gate dwarfs on the toggle');
+  assert.match(search, /showDwarfPlanets\s*\?\s*OFFICIAL_DWARF_KEYS/, 'SearchBar must gate IAU dwarfs on their toggle');
+  assert.match(search, /showDwarfCandidates\s*\?\s*ORDERED_DWARF_KEYS/, 'SearchBar must gate candidate dwarfs on their toggle');
   assert.match(search, /showMoons\s*\?[\s\S]*?ORDERED_MOON_KEYS/, 'SearchBar must gate moons on the toggle');
 });
 
-console.log(`\nSmall bodies tests: ${passed}/12 passed`);
+console.log(`\nSmall bodies tests: ${passed}/13 passed`);

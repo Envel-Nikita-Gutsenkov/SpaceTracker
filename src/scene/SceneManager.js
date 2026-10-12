@@ -19,6 +19,16 @@ import { setUploadRenderer } from './textureUpload.js';
 import { perfProbe } from '../utils/perfProbe.js';
 import { isSegmentOccludedBySphere } from '../utils/celestialOcclusion';
 import { getZoomedBodyId, SUN_CLOSE_UP_FACTOR } from '../utils/planetaryLabels';
+import {
+  latLonToScene,
+  isSurfacePointVisible,
+  geographyTier,
+  selectNonOverlapping,
+  estimateTextWidth,
+  projectWorldToScreen,
+  CITY_LABELS,
+  CONTINENT_LABELS,
+} from '../utils/geography';
 import { getFocusTransitionProgress, FOCUS_TRANSITION_DURATION_MS } from '../utils/focusTransition';
 import { useSatStore } from '../store/useSatStore';
 
@@ -78,6 +88,9 @@ export class SceneManager {
     this._vProj = new THREE.Vector3();
     this._tempV = new THREE.Vector3();
     this._labelBodies = null;
+    // Latest Greenwich sidereal time (radians); the geography-label pass needs it to place
+    // surface points on the spinning globe without recomputing it on the 30 Hz label tick.
+    this._gmst = 0;
 
     // Local simulation clock, decoupled from the store to avoid per-frame React renders.
     this._simTime        = useSatStore.getState().simTime;
@@ -615,6 +628,7 @@ export class SceneManager {
     this._tempDate.setTime(newSim);
     const date   = this._tempDate;
     const gmst   = getGMST(date);
+    this._gmst   = gmst;
     const sunECI = getSunPositionECI(date);
     const sunDir = this._vSunDir.set(sunECI.x, sunECI.z, sunECI.y).normalize();
     perfProbe.end();
@@ -651,7 +665,10 @@ export class SceneManager {
         this.focusMode,
         this.focusedPlanetId,
         Boolean(store.showDwarfPlanets),
-        Boolean(store.showMoons)
+        Boolean(store.showMoons),
+        Boolean(store.showBodyPoints),
+        Boolean(store.showMoonPoints),
+        Boolean(store.showDwarfCandidates)
       );
 
       if (this.planets.isStrongZoom) {
@@ -974,6 +991,83 @@ export class SceneManager {
     }
 
     return results;
+  }
+
+  // Screen-space city / continent labels for the Earth globe (opt-in display layer).
+  //
+  // Every label is placed at the *actual* surface point for its coordinates via the shared
+  // `latLonToScene` (the same frame the Earth mesh spins in), dropped when it is on the far
+  // side of the globe, and thinned by a priority-ordered anti-collision pass so the view never
+  // fills with overlapping names — exactly like the planet-label pass, but on the surface.
+  getGeographyScreenPositions() {
+    if (!this.camera) return [];
+    const store = useSatStore.getState();
+    if (!store.showGeographicLabels) return [];
+
+    const camPos = this.camera.position;
+    const tier = geographyTier(camPos.length());
+    if (tier.kind === 'none') return [];
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const gmst = this._gmst;
+    const showCities = tier.kind === 'city';
+    const source = showCities ? CITY_LABELS : CONTINENT_LABELS;
+
+    const candidates = [];
+    for (const item of source) {
+      if (showCities && item.level > tier.level) continue;
+
+      const p = latLonToScene(item.lat, item.lon, gmst, 1.0);
+      // Only the near hemisphere: never draw a dot for a city behind the globe.
+      if (!isSurfacePointVisible(p, camPos, 1.0, 0.06)) continue;
+
+      const screen = projectWorldToScreen(p.x, p.y, p.z, this.camera, w, h);
+      if (!screen.visible) continue;
+      const x = screen.x;
+      const y = screen.y;
+      if (x < -80 || x > w + 80 || y < -40 || y > h + 40) continue;
+
+      if (showCities) {
+        const text = store.language === 'ru' ? item.nameRu : item.name;
+        const textW = estimateTextWidth(text, 12, 0.06);
+        // The dot sits on the point; the box spans the dot plus the text to its right.
+        const boxW = 9 + textW + 8;
+        candidates.push({
+          id: `city:${item.name}`,
+          kind: 'city',
+          name: item.name,
+          nameRu: item.nameRu,
+          x,
+          y,
+          w: boxW,
+          h: 18,
+          cx: x + boxW / 2 - 4,
+          cy: y,
+          priority: item.level,
+        });
+      } else {
+        const text = store.language === 'ru' ? item.nameRu : item.name;
+        const textW = estimateTextWidth(text, 15, 0.22);
+        const boxW = textW + 10;
+        candidates.push({
+          id: `continent:${item.name}`,
+          kind: 'continent',
+          name: item.name,
+          nameRu: item.nameRu,
+          x,
+          y,
+          w: boxW,
+          h: 22,
+          cx: x,
+          cy: y,
+          priority: item.level,
+        });
+      }
+    }
+
+    const kept = selectNonOverlapping(candidates, showCities ? 26 : 7, 6, 3);
+    return kept.map(({ id, kind, name, nameRu, x, y }) => ({ id, kind, name, nameRu, x, y }));
   }
 
   destroy() {

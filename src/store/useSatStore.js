@@ -31,9 +31,14 @@ export const useSatStore = create((set) => ({
   showNightLights: true,
   showClouds: true,
   showVanAllen: false,
-  showDwarfPlanets: true,  // Dwarf planets are shown by default (they carry real maps now)
+  showDwarfPlanets: true,  // IAU-designated dwarf planets (Ceres, Haumea, Makemake, Eris)
+  showDwarfCandidates: true, // Probable/candidate dwarf planets (not IAU-ratified) — a separate
+                             // category, so it gets its own toggle instead of riding the one above.
   showMoons: false,        // Natural satellites of other planets stay hidden until enabled
+  showBodyPoints: false,   // Screen-space "there is something here" dots for planets + dwarfs (off by default)
+  showMoonPoints: false,   // Separate point layer for every moon (off by default)
   showDeepSpaceProbes: false, // Interstellar probes (Voyager/Pioneer/New Horizons) markers stay hidden by default
+  showGeographicLabels: false, // City / continent names on the Earth globe stay hidden by default
   showSat3DModel: true,
   satPointSize: 2.2,
   operatorFilter: 'all',
@@ -146,11 +151,23 @@ export const useSatStore = create((set) => ({
   setShowDwarfPlanets: (v) => set({ showDwarfPlanets: v }),
   toggleShowDwarfPlanets: () => set((state) => ({ showDwarfPlanets: !state.showDwarfPlanets })),
 
+  setShowDwarfCandidates: (v) => set({ showDwarfCandidates: v }),
+  toggleShowDwarfCandidates: () => set((state) => ({ showDwarfCandidates: !state.showDwarfCandidates })),
+
   setShowMoons: (v) => set({ showMoons: v }),
   toggleShowMoons: () => set((state) => ({ showMoons: !state.showMoons })),
 
+  setShowBodyPoints: (v) => set({ showBodyPoints: v }),
+  toggleShowBodyPoints: () => set((state) => ({ showBodyPoints: !state.showBodyPoints })),
+
+  setShowMoonPoints: (v) => set({ showMoonPoints: v }),
+  toggleShowMoonPoints: () => set((state) => ({ showMoonPoints: !state.showMoonPoints })),
+
   setShowDeepSpaceProbes: (v) => set({ showDeepSpaceProbes: v }),
   toggleShowDeepSpaceProbes: () => set((state) => ({ showDeepSpaceProbes: !state.showDeepSpaceProbes })),
+
+  setShowGeographicLabels: (v) => set({ showGeographicLabels: v }),
+  toggleShowGeographicLabels: () => set((state) => ({ showGeographicLabels: !state.showGeographicLabels })),
 
   setShowSat3DModel: (v) => set({ showSat3DModel: v }),
   toggleShowSat3DModel: () => set((state) => ({ showSat3DModel: !state.showSat3DModel })),

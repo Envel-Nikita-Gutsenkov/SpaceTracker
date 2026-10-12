@@ -63,8 +63,12 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showClouds, toggleShowClouds,
     showVanAllen, toggleShowVanAllen,
     showDwarfPlanets, toggleShowDwarfPlanets,
+    showDwarfCandidates, toggleShowDwarfCandidates,
     showMoons, toggleShowMoons,
+    showBodyPoints, toggleShowBodyPoints,
+    showMoonPoints, toggleShowMoonPoints,
     showDeepSpaceProbes, toggleShowDeepSpaceProbes,
+    showGeographicLabels, toggleShowGeographicLabels,
     showSat3DModel, toggleShowSat3DModel,
     satPointSize, setSatPointSize,
     mouseSensitivity, setMouseSensitivity,
@@ -90,8 +94,12 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showClouds: s.showClouds, toggleShowClouds: s.toggleShowClouds,
     showVanAllen: s.showVanAllen, toggleShowVanAllen: s.toggleShowVanAllen,
     showDwarfPlanets: s.showDwarfPlanets, toggleShowDwarfPlanets: s.toggleShowDwarfPlanets,
+    showDwarfCandidates: s.showDwarfCandidates, toggleShowDwarfCandidates: s.toggleShowDwarfCandidates,
     showMoons: s.showMoons, toggleShowMoons: s.toggleShowMoons,
+    showBodyPoints: s.showBodyPoints, toggleShowBodyPoints: s.toggleShowBodyPoints,
+    showMoonPoints: s.showMoonPoints, toggleShowMoonPoints: s.toggleShowMoonPoints,
     showDeepSpaceProbes: s.showDeepSpaceProbes, toggleShowDeepSpaceProbes: s.toggleShowDeepSpaceProbes,
+    showGeographicLabels: s.showGeographicLabels, toggleShowGeographicLabels: s.toggleShowGeographicLabels,
     showSat3DModel: s.showSat3DModel, toggleShowSat3DModel: s.toggleShowSat3DModel,
     satPointSize: s.satPointSize, setSatPointSize: s.setSatPointSize,
     mouseSensitivity: s.mouseSensitivity, setMouseSensitivity: s.setMouseSensitivity,
@@ -601,11 +609,19 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
                   <Toggle on={showPlanetaryOrbits} onChange={toggleShowPlanetaryOrbits} />
                 </div>
 
-                {/* Dwarf planets (shown by default) */}
+                {/* IAU-designated dwarf planets (shown by default) */}
                 <div className="cat-item" onClick={toggleShowDwarfPlanets}>
                   <span className="cat-dot" style={{ background: '#a8a29e' }} />
                   <span className="cat-name">{t('dwarf_planets', 'Dwarf Planets')}</span>
                   <Toggle on={showDwarfPlanets} onChange={toggleShowDwarfPlanets} />
+                </div>
+
+                {/* Probable/candidate dwarf planets — a distinct, unratified category, so it has
+                    its own switch rather than riding the IAU dwarf-planet one. */}
+                <div className="cat-item" onClick={toggleShowDwarfCandidates}>
+                  <span className="cat-dot" style={{ background: '#78716c' }} />
+                  <span className="cat-name">{t('dwarf_candidates', 'Dwarf Planet Candidates')}</span>
+                  <Toggle on={showDwarfCandidates} onChange={toggleShowDwarfCandidates} />
                 </div>
 
                 {/* Natural satellites of other planets (hidden until enabled) */}
@@ -615,11 +631,32 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
                   <Toggle on={showMoons} onChange={toggleShowMoons} />
                 </div>
 
+                {/* Screen-space dots for every planet and dwarf (locate bodies at any zoom) */}
+                <div className="cat-item" onClick={toggleShowBodyPoints}>
+                  <span className="cat-dot" style={{ background: '#7dd3fc' }} />
+                  <span className="cat-name">{t('body_points', 'Planet & Dwarf Points')}</span>
+                  <Toggle on={showBodyPoints} onChange={toggleShowBodyPoints} />
+                </div>
+
+                {/* Separate point layer for every moon (opt-in) */}
+                <div className="cat-item" onClick={toggleShowMoonPoints}>
+                  <span className="cat-dot" style={{ background: '#fcd34d' }} />
+                  <span className="cat-name">{t('moon_points', 'Moon Points')}</span>
+                  <Toggle on={showMoonPoints} onChange={toggleShowMoonPoints} />
+                </div>
+
                 {/* Interstellar / escape probes (Voyager, Pioneer, New Horizons) — hidden until enabled */}
                 <div className="cat-item" onClick={toggleShowDeepSpaceProbes}>
                   <span className="cat-dot" style={{ background: '#f59e0b' }} />
                   <span className="cat-name">{t('deep_space_probes', 'Deep-Space Probes')}</span>
                   <Toggle on={showDeepSpaceProbes} onChange={toggleShowDeepSpaceProbes} />
+                </div>
+
+                {/* City / continent names on the Earth globe — hidden until enabled */}
+                <div className="cat-item" onClick={toggleShowGeographicLabels}>
+                  <span className="cat-dot" style={{ background: '#22d3ee' }} />
+                  <span className="cat-name">{t('geographic_labels', 'City & Continent Names')}</span>
+                  <Toggle on={showGeographicLabels} onChange={toggleShowGeographicLabels} />
                 </div>
 
                 <div className="display-subhead">{t('celestial_stars', 'Celestial & Stars')}</div>

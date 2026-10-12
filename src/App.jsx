@@ -10,6 +10,7 @@ import HUD              from './components/HUD';
 import SearchBar        from './components/SearchBar';
 import PlanetBar        from './components/PlanetBar';
 import CelestialLabels  from './components/CelestialLabels';
+import GeographyLabels  from './components/GeographyLabels';
 import { SOLAR_SATS, LUNAR_SATS } from './utils/celestialFleet';
 import { PLANETARY_ORBITERS } from './utils/planetaryFleet';
 import { DEEP_SPACE_PROBES } from './utils/deepSpaceProbes';
@@ -295,6 +296,8 @@ export default function App() {
             onFocusSun={handleFocusSun}
             onFocusPlanet={handleFocusPlanet}
           />
+
+          <GeographyLabels sceneRef={sceneRef} />
 
           <SearchBar minimalist={minimalist} onFocus={handleFocus} />
 

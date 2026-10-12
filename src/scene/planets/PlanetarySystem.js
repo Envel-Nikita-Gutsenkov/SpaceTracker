@@ -3,7 +3,7 @@ import {
   ORDERED_PLANET_KEYS,
   PLANETARY_ELEMENTS_J2000
 } from '../../utils/planetaryData';
-import { ORDERED_DWARF_KEYS, ORDERED_MOON_KEYS, getBodyData } from '../../utils/smallBodies';
+import { ORDERED_DWARF_KEYS, ORDERED_MOON_KEYS, getBodyData, isOfficialDwarf } from '../../utils/smallBodies';
 import {
   getPlanetPositionThreeJS,
   getOrbitTrajectoryPoints,
@@ -160,7 +160,12 @@ export class PlanetarySystem {
     focusMode = 'earth',
     focusedPlanetId = null,
     showDwarfPlanets = false,
-    showMoons = false
+    showMoons = false,
+    showBodyPoints = false,
+    showMoonPoints = false,
+    // Candidate (non-IAU) dwarf planets are a separate, unratified category and therefore carry
+    // their own visibility gate instead of riding `showDwarfPlanets`.
+    showDwarfCandidates = false
   ) {
     if (!sunPos) return;
 
@@ -257,16 +262,24 @@ export class PlanetarySystem {
 
       // 4. Distance-adaptive beacon: a small marker that grows with camera distance so the
       // planet stays a visible dot from far away, and vanishes once the disc itself is large
-      // enough to read. The marker must scale with the body — a fixed 1-unit sphere (the old
-      // `Math.max(1.0, …)` floor) swamped tiny Mercury/Venus/Mars, overlapping the disc far
-      // closer than the close-up threshold hid it (see isPlanetCloseUp).
+      // enough to read. The dedicated "body points" display layer forces the marker on at a
+      // slightly larger, constant screen size so every planet reads as a locatable dot.
       if (camera && planet.beaconMesh) {
-        // When inspecting the planet up-close, hide the beacon dot completely
         const isUpClose = isPlanetCloseUp(camDistToThisPlanet, planet.radiusUnits);
-        planet.beaconMesh.visible = !isUpClose;
-        if (!isUpClose) {
-          const bScale = Math.min(Math.max(camDistToThisPlanet * 0.008, planet.radiusUnits * 0.02), 800.0);
+        if (showBodyPoints) {
+          planet.beaconMesh.visible = true;
+          // No distance cap: the marker must keep a *constant* angular size so it stays a
+          // visible, clickable dot at any zoom. A cap made it shrink to sub-pixel at large
+          // camera distances (e.g. past ~7 AU), which is exactly when the point layer matters.
+          const bScale = Math.max(camDistToThisPlanet * 0.012, planet.radiusUnits * 0.02);
           planet.beaconMesh.scale.set(bScale, bScale, bScale);
+        } else {
+          // When inspecting the planet up-close, hide the beacon dot completely
+          planet.beaconMesh.visible = !isUpClose;
+          if (!isUpClose) {
+            const bScale = Math.max(camDistToThisPlanet * 0.008, planet.radiusUnits * 0.02);
+            planet.beaconMesh.scale.set(bScale, bScale, bScale);
+          }
         }
       }
 
@@ -349,7 +362,10 @@ export class PlanetarySystem {
       showPlanetaryOrbits,
       showAllOrbits,
       showDwarfPlanets,
-      showMoons
+      showMoons,
+      showBodyPoints,
+      showMoonPoints,
+      showDwarfCandidates
     );
   }
 
@@ -365,7 +381,10 @@ export class PlanetarySystem {
     showPlanetaryOrbits,
     showAllOrbits,
     showDwarfPlanets,
-    showMoons
+    showMoons,
+    showBodyPoints = false,
+    showMoonPoints = false,
+    showDwarfCandidates = false
   ) {
     const timeMs = date ? date.getTime() : Date.now();
 
@@ -373,8 +392,15 @@ export class PlanetarySystem {
       const isSelected = selectedPlanetId === id;
       const isFocused = focusedPlanetId === id;
       const isMoonBody = body.bodyClass === 'moon';
-      const showClass = isMoonBody ? showMoons : showDwarfPlanets;
-      const isVisible = Boolean(showClass || isSelected || isFocused);
+      // Three independent gates: moons, IAU dwarf planets, and the candidate dwarfs, which are a
+      // separate unratified category and must not follow the official dwarf-planet switch.
+      const showClass = isMoonBody
+        ? showMoons
+        : (isOfficialDwarf(id) ? showDwarfPlanets : showDwarfCandidates);
+      // The dedicated point layers reveal a body as a locatable dot without enabling its full
+      // category — every dwarf/moon is visible (and therefore clickable) while its layer is on.
+      const showPoints = isMoonBody ? showMoonPoints : showBodyPoints;
+      const isVisible = Boolean(showClass || isSelected || isFocused || showPoints);
 
       // Advance the body's position every frame, even while it is hidden. A hidden group would
       // otherwise sit at the scene origin, so its own moons — and the camera, when the user clicks
@@ -412,7 +438,8 @@ export class PlanetarySystem {
       body.group.visible = true;
       // Bodies built lazily synthesise their surface the first time they are actually shown, so a
       // body that stays hidden never pays for its procedural canvas (no-op after the first call).
-      body.ensureTexture?.();
+      // A body revealed only by the point layer needs no surface, so it keeps its placeholder.
+      if (showClass || isSelected || isFocused) body.ensureTexture?.();
 
       if (isMoonBody) {
         if (body.moonOrbitLine) {
@@ -437,7 +464,7 @@ export class PlanetarySystem {
             line.geometry.computeBoundingSphere();
             line.userData.initialized = true;
           }
-          line.visible = Boolean(showPlanetaryOrbits && (showDwarfPlanets || isSelected || isFocused));
+          line.visible = Boolean(showPlanetaryOrbits && (showClass || isSelected || isFocused));
           if (line.visible) line.position.copy(sunPos);
         }
       }
@@ -456,17 +483,26 @@ export class PlanetarySystem {
         }
       }
 
-      // Distance-adaptive beacon for dwarfs so they read as dots from far away. Same
-      // body-scaled marker as the planets above — the old fixed 1-unit floor made the beacon
-      // far bigger than a dwarf (Ceres is ~0.07 Earth radii) and it overlapped the disc.
-      if (camera && body.beaconMesh && !isMoonBody) {
+      // Distance-adaptive beacon. The dedicated point layers force the marker on at a constant
+      // screen size so every dwarf/moon reads as a locatable dot even while its body stays hidden;
+      // otherwise dwarfs use the same body-scaled marker as the planets, and moons hide theirs.
+      if (camera && body.beaconMesh) {
         body.group.getWorldPosition(this._tempV);
         const camDist = camera.position.distanceTo(this._tempV);
-        const isUpClose = isPlanetCloseUp(camDist, body.radiusUnits);
-        body.beaconMesh.visible = !isUpClose;
-        if (!isUpClose) {
-          const bScale = Math.min(Math.max(camDist * 0.008, body.radiusUnits * 0.02), 800.0);
+        if (showPoints) {
+          body.beaconMesh.visible = true;
+          // Constant angular size (no cap) so distant dwarfs/moons stay visible as dots.
+          const bScale = Math.max(camDist * 0.012, body.radiusUnits * 0.02);
           body.beaconMesh.scale.set(bScale, bScale, bScale);
+        } else if (isMoonBody) {
+          body.beaconMesh.visible = false;
+        } else {
+          const isUpClose = isPlanetCloseUp(camDist, body.radiusUnits);
+          body.beaconMesh.visible = !isUpClose;
+          if (!isUpClose) {
+            const bScale = Math.max(camDist * 0.008, body.radiusUnits * 0.02);
+            body.beaconMesh.scale.set(bScale, bScale, bScale);
+          }
         }
       }
     });

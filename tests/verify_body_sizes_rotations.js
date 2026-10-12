@@ -32,6 +32,7 @@ const PLANET_RADII_KM = {
 const DWARF_RADII_KM = {
   ceres: 469.7, orcus: 455, haumea: 780, quaoar: 549, makemake: 715,
   gonggong: 615, eris: 1163, sedna: 498, salacia: 419,
+  varda: 324, ixion: 348.4, mani: 398, aya: 384, achlys: 353, uni: 305, hygiea: 216.5,
 };
 
 const MOON_RADII_KM = {
@@ -52,12 +53,16 @@ const PLANET_ROT_HOURS = {
 };
 
 // Moons in synchronous rotation: sidereal spin == orbital period.
-// Hi'iaka and Namaka are deliberately excluded (they are not synchronous).
+// Hi'iaka, Namaka and Hyperion are deliberately excluded (they are not synchronous).
 const SYNCHRONOUS_MOONS = [
-  'phobos', 'deimos', 'io', 'europa', 'ganymede', 'callisto',
-  'mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus',
-  'miranda', 'ariel', 'umbriel', 'titania', 'oberon', 'triton', 'charon',
-  'dysnomia', 'mk2', 'weywot', 'vanth', 'actaea',
+  'phobos', 'deimos',
+  'metis', 'adrastea', 'amalthea', 'thebe', 'io', 'europa', 'ganymede', 'callisto',
+  'pan', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus', 'mimas', 'enceladus',
+  'helene', 'tethys', 'dione', 'rhea', 'titan', 'iapetus',
+  'puck', 'miranda', 'ariel', 'umbriel', 'titania', 'oberon',
+  'naiad', 'thalassa', 'despina', 'galatea', 'larissa', 'proteus', 'triton',
+  'charon', 'styx', 'nix', 'kerberos', 'hydra',
+  'dysnomia', 'mk2', 'weywot', 'vanth', 'actaea', 'ilmare',
 ];
 
 console.log('Body sizes and rotations verification');
@@ -188,7 +193,7 @@ test('synchronous moons are tidally locked (rotPeriodHours matches orbital perio
   }
 
   // Non-synchronous moons must NOT be forced into the lock (guards the exclusion list).
-  for (const key of ['hiiaka', 'namaka']) {
+  for (const key of ['hiiaka', 'namaka', 'hyperion']) {
     const moon = MOONS[key];
     const expected = moon.elements.periodDays * 24;
     assert.ok(relDiff(moon.rotPeriodHours, expected) > 0.01,

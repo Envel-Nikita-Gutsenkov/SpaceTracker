@@ -58,7 +58,10 @@ selected marker, so it never lags or drifts.
 
 - One GLSL pass blends day / night / specular in a single shader; clouds are a
   second transparent sphere layer.
-- The terminator is a `smoothstep` of `dot(normal, sunDir)` — GPU-side, free.
+- The day/night blend is a `smoothstep` of `dot(normal, sunDir)` centred on the geometric
+  terminator (N·S = 0), with the day side falling off like a Lambertian sphere. The twilight
+  width and the day/night gains live in `src/scene/earthLighting.js` and are pinned by
+  `tests/verify_earth_lighting.js` — GPU-side, free.
 
 ## Texture Budget
 
@@ -68,8 +71,8 @@ image at full resolution once it decodes, so no body ever flashes blank.
 
 | Texture | Size | Source / Notes |
 |---|---|---|
-| Earth day | 8K (8192×4096) | NASA Blue Marble; 2K base + 8K tier active within 6 Earth radii |
-| Earth night | 8K (8192×4096) | city lights; 2K base + 8K tier active within 6 Earth radii |
+| Earth day | 8K (8192×4096) | NASA Blue Marble; 8K active at every distance, 2K base paints the first boot frames |
+| Earth night | 8K (8192×4096) | city lights; same series as the day tier (the 2K base is a downscale of the 8K master) |
 | Earth specular | 2048×1024 | ocean mask |
 | Earth clouds | 2K base + live 2K/4K/8K | static fallback bound first, then EUMETSAT tiers streamed by distance |
 | Mercury / Venus / Mars | 8K (8192×4096) | Solar System Scope; 2K base + 8K tier streamed on approach |
@@ -100,7 +103,9 @@ they can actually be seen:
 
 1. A lightweight base tier (procedural canvas, or the 2K Earth map) is bound immediately.
 2. `TextureLODManager` (`src/scene/planets/TextureLODManager.js`) streams higher tiers by
-   camera-to-body distance. The 8K Earth day/night layers are active within 6 Earth radii.
+   camera-to-body distance. Because the Earth tiers are preloaded and never evicted, the 8K
+   day/night layers stay active at every distance — the 2K base only paints the first frames
+   of boot. Planets and dwarfs still stream their finer tiers on approach.
 3. The Earth tiers are **preloaded at startup and never evicted** (`preload: true,
    evict: Infinity`). The one-time 8K decode + full-resolution GPU upload therefore lands
    during boot, behind the loading overlay — so no zoom ever has texture work to do and the
@@ -165,7 +170,8 @@ Main thread: geometry.attributes.position.needsUpdate = true          // once pe
 - Per satellite: ~200 bytes metadata + 12 bytes position ≈ 212 bytes.
 - 10,000 satellites: ~2.1 MB; TLE strings: ~2 MB.
 - Textures: distant bodies hold only their base tier; the 8K Earth day + night pair
-  (~350 MB with mipmaps) is resident only while the camera is within 6 Earth radii.
+  (~350 MB with mipmaps) is preloaded at boot and kept resident for the whole session, so it
+  stays active however far the camera pulls back.
 - Total: comfortable on desktop GPUs; mobile should drop the 8K upgrade.
 
 ## Picking (Click Detection)

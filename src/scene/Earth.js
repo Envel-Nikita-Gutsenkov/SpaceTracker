@@ -1,6 +1,16 @@
 import * as THREE from 'three';
 import { TextureLODManager } from './planets/TextureLODManager.js';
 import { applyEquirectLongitudeUV } from './planets/equirectUV.js';
+import {
+  EARTH_TWILIGHT,
+  EARTH_SUN_DIFFUSE,
+  EARTH_SUN_AMBIENT,
+  EARTH_NIGHT_GAIN,
+} from './earthLighting.js';
+
+// GLSL float literal (always with a decimal point) so the shared lighting constants in
+// ./earthLighting.js can be injected into the shader source without hard-coding them.
+const glslFloat = (x) => Number(x).toFixed(4);
 
 const VERT = /* glsl */ `
   #include <common>
@@ -38,22 +48,23 @@ const FRAG = /* glsl */ `
     vec3 S       = normalize(sunDir);
 
     float dotNS  = dot(N, S);
-    // Smooth transition from night to day
-    float dayMix = smoothstep(-0.08, 0.12, dotNS);
+    // Day/night blend. The smoothstep band is *symmetric* about dotNS = 0, so its midpoint
+    // lands on the true geometric terminator (verified vs NOAA in tests/verify_math.js).
+    // Constants and rationale live in src/scene/earthLighting.js.
+    float dayMix = smoothstep(-${glslFloat(EARTH_TWILIGHT)}, ${glslFloat(EARTH_TWILIGHT)}, dotNS);
 
-    // Pure real photo textures with bilinear hardware filtering
+    // Photo textures with bilinear hardware filtering
     vec4 daySample   = texture2D(dayTex,   vUv);
     vec4 nightSample = texture2D(nightTex, vUv);
     float spec       = texture2D(specTex,  vUv).r;
 
-    // Realistic Solar Radiance & Diffuse Scattering:
-    // In space photography (Apollo, ISS, DSCOVR), the sunlit Earth is brilliantly bright.
-    // Diffuse cosine factor with gentle ambient scattering prevents Europe from looking pitch dark.
-    float diffuse = clamp(dotNS * 0.75 + 0.35, 0.0, 1.0);
-    vec3 dayColor = daySample.rgb * 1.45 * diffuse;
+    // Lambertian day radiance: bright at the sub-solar point, falling to a faint ambient floor
+    // at dusk — the natural bright-centre / dark-limb falloff of a sunlit sphere.
+    float dayRadiance = ${glslFloat(EARTH_SUN_DIFFUSE)} * max(dotNS, 0.0) + ${glslFloat(EARTH_SUN_AMBIENT)};
+    vec3 dayColor = daySample.rgb * dayRadiance;
 
-    // Night: real city lights photograph modulated by nightLights uniform
-    vec3 nightColor = nightSample.rgb * 2.2 * nightLights;
+    // Night: real city-lights photograph modulated by the nightLights uniform
+    vec3 nightColor = nightSample.rgb * ${glslFloat(EARTH_NIGHT_GAIN)} * nightLights;
 
     vec3 color = mix(nightColor, dayColor, dayMix);
 
@@ -118,11 +129,13 @@ const CLOUD_FRAG = /* glsl */ `
   }
 `;
 
-// Distance (in Earth radii, R = 1 unit) within which the heavy 8K day/night layers are
-// active. The default camera sits at ~3.5 units, so 8K is the *normal* view. The layers
-// are preloaded at startup and never evicted: the one-time 8K decode + GPU upload lands
-// during boot (behind the loading overlay), so zooming never has any texture work to do.
-const EARTH_HIRES_DISTANCE = 6.0;
+// The heavy 8K day/night layers are preloaded at startup and never evicted, so once they
+// decode they stay active at *every* camera distance — `Infinity` keeps them selected however
+// far the camera pulls back. The 2K base tier therefore only paints the first frames of boot,
+// before the 8K arrives, and is never the final image. Streaming down to the 2K base at range
+// used to swap in a lower-detail, differently-graded image (the globe visibly darkened when
+// pulling back) for no memory saving, since the 8K was already resident.
+const EARTH_HIRES_DISTANCE = Infinity;
 const EARTH_LOD_OPTIONS = { preload: true, evict: Infinity };
 
 // Peak cloud-layer alpha (0 = invisible, 1 = fully opaque). Kept below 1 so the
@@ -153,17 +166,19 @@ export class Earth {
 
     textureLod.setRenderer(renderer);
 
-    // Resolution tiers streamed by camera proximity (see TextureLODManager): the 2K base
-    // paints instantly and the 8K day/night layers are preloaded at startup, then kept
-    // resident for the whole session, so the heavy upload never lands mid-zoom. Spec/cloud
-    // maps are single-tier.
+    // Resolution tiers: the 2K base paints the first boot frames instantly and the 8K
+    // day/night layers are preloaded at startup, then kept resident *and active* for the
+    // whole session (see EARTH_HIRES_DISTANCE), so the heavy upload never lands mid-zoom and
+    // the globe never drops to the coarser image. The 2K base is a plain downscale of the 8K
+    // master (tools/build_earth_tiers.py), so even the boot placeholder is the same series.
+    // Spec/cloud maps are single-tier.
     this._dayLod   = textureLod.create([
       { url: '/earth_day_2048.webp',  distance: Infinity },
       { url: '/earth_day_8k.webp',    distance: EARTH_HIRES_DISTANCE },
     ], EARTH_LOD_OPTIONS);
     this._nightLod = textureLod.create([
-      { url: '/earth_night_2048.png', distance: Infinity },
-      { url: '/earth_night_8k.webp',  distance: EARTH_HIRES_DISTANCE },
+      { url: '/earth_night_2048.webp', distance: Infinity },
+      { url: '/earth_night_8k.webp',   distance: EARTH_HIRES_DISTANCE },
     ], EARTH_LOD_OPTIONS);
     this._specLod  = textureLod.create([{ url: '/earth_spec_2048.webp' }]);
     // Bundled static cloud map — the always-available fallback. If a live map is

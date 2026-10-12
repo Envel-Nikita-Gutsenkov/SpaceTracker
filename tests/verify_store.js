@@ -93,6 +93,38 @@ test('toggleShowDwarfPlanets and toggleShowMoons round-trip', () => {
 });
 
 TOTAL++;
+test('toggleShowDwarfCandidates is independent of toggleShowDwarfPlanets', () => {
+  useSatStore.setState({ showDwarfPlanets: true, showDwarfCandidates: true });
+  assert.equal(useSatStore.getState().showDwarfCandidates, true,
+    'candidate dwarf planets must default to shown');
+  useSatStore.getState().toggleShowDwarfCandidates();
+  assert.equal(useSatStore.getState().showDwarfCandidates, false);
+  assert.equal(useSatStore.getState().showDwarfPlanets, true,
+    'flipping the candidates must not touch the IAU dwarf-planet layer');
+  useSatStore.getState().setShowDwarfCandidates(true);
+  useSatStore.getState().toggleShowDwarfPlanets();
+  assert.equal(useSatStore.getState().showDwarfPlanets, false);
+  assert.equal(useSatStore.getState().showDwarfCandidates, true,
+    'flipping the IAU layer must not touch the candidates');
+  useSatStore.setState({ showDwarfPlanets: true, showDwarfCandidates: true });
+});
+
+TOTAL++;
+test('body/moon point layers default to hidden and toggle round-trips', () => {
+  const s0 = useSatStore.getState();
+  assert.equal(s0.showBodyPoints, false, 'the planet/dwarf point layer must default off');
+  assert.equal(s0.showMoonPoints, false, 'the moon point layer must default off');
+  useSatStore.getState().toggleShowBodyPoints();
+  useSatStore.getState().toggleShowMoonPoints();
+  assert.equal(useSatStore.getState().showBodyPoints, true);
+  assert.equal(useSatStore.getState().showMoonPoints, true);
+  useSatStore.getState().setShowBodyPoints(false);
+  useSatStore.getState().setShowMoonPoints(false);
+  assert.equal(useSatStore.getState().showBodyPoints, false);
+  assert.equal(useSatStore.getState().showMoonPoints, false);
+});
+
+TOTAL++;
 test('interstellar probe markers default to hidden and toggle round-trips', () => {
   assert.equal(useSatStore.getState().showDeepSpaceProbes, false,
     'deep-space probe markers must default to hidden');
@@ -103,6 +135,17 @@ test('interstellar probe markers default to hidden and toggle round-trips', () =
   useSatStore.getState().setShowDeepSpaceProbes(true);
   assert.equal(useSatStore.getState().showDeepSpaceProbes, true);
   useSatStore.setState({ showDeepSpaceProbes: false });
+});
+
+TOTAL++;
+test('geographic (city/continent) labels default to hidden and toggle round-trips', () => {
+  assert.equal(useSatStore.getState().showGeographicLabels, false,
+    'geographic labels must default to hidden');
+  useSatStore.getState().toggleShowGeographicLabels();
+  assert.equal(useSatStore.getState().showGeographicLabels, true);
+  useSatStore.getState().toggleShowGeographicLabels();
+  assert.equal(useSatStore.getState().showGeographicLabels, false);
+  useSatStore.setState({ showGeographicLabels: false });
 });
 
 // ---------------------------------------------------------------------------

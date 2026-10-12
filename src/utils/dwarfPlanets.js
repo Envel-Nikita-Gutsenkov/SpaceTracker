@@ -16,7 +16,14 @@
 //   nDegPerDay  mean motion, deg/day
 //   epochJD     SBDB epoch (Julian Date, TDB)
 //
-// All nine SBDB solutions below use epoch JD 2461200.5 (TDB), frame J2000, equinox J2000.
+// All SBDB solutions below use epoch JD 2461200.5 (TDB), frame J2000, equinox J2000.
+//
+// `recognition` records the IAU classification status of each body:
+//   'official'  – formally designated a dwarf planet by the IAU (2006): Ceres, Eris, Haumea,
+//                 Makemake (Pluto, the fifth, is carried by PLANETARY_ELEMENTS_J2000 as a planet).
+//   'candidate' – a probable dwarf planet that meets the physical criteria (hydrostatic
+//                 equilibrium, orbits the Sun, has not cleared its neighbourhood) but has not
+//                 been formally classified by the IAU.
 
 export const DWARF_PLANETS = {
   // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=ceres&phys-par=1&full-prec=1
@@ -35,6 +42,7 @@ export const DWARF_PLANETS = {
     glowColor: '#d6d3d1',
     hasRings: false,
     atmosphere: false,
+    recognition: 'official',
     nameEn: 'Ceres',
     nameRu: 'Церера',
     typeEn: 'Dwarf Planet',
@@ -62,6 +70,7 @@ export const DWARF_PLANETS = {
     glowColor: '#cbd5e1',
     hasRings: false,
     atmosphere: false,
+    recognition: 'candidate',
     nameEn: 'Orcus',
     nameRu: 'Орк',
     typeEn: 'Dwarf Planet',
@@ -95,6 +104,7 @@ export const DWARF_PLANETS = {
     glowColor: '#ffffff',
     hasRings: true,
     atmosphere: false,
+    recognition: 'official',
     nameEn: 'Haumea',
     nameRu: 'Хаумеа',
     typeEn: 'Dwarf Planet',
@@ -123,6 +133,7 @@ export const DWARF_PLANETS = {
     glowColor: '#fed7aa',
     hasRings: true,
     atmosphere: false,
+    recognition: 'candidate',
     nameEn: 'Quaoar',
     nameRu: 'Квавар',
     typeEn: 'Dwarf Planet',
@@ -150,6 +161,7 @@ export const DWARF_PLANETS = {
     glowColor: '#fdba74',
     hasRings: false,
     atmosphere: false,
+    recognition: 'official',
     nameEn: 'Makemake',
     nameRu: 'Макемаке',
     typeEn: 'Dwarf Planet',
@@ -177,6 +189,7 @@ export const DWARF_PLANETS = {
     glowColor: '#fca5a5',
     hasRings: false,
     atmosphere: false,
+    recognition: 'candidate',
     nameEn: 'Gonggong',
     nameRu: 'Гунгун',
     typeEn: 'Dwarf Planet',
@@ -206,6 +219,7 @@ export const DWARF_PLANETS = {
     glowColor: '#ffffff',
     hasRings: false,
     atmosphere: false,
+    recognition: 'official',
     nameEn: 'Eris',
     nameRu: 'Эрида',
     typeEn: 'Dwarf Planet',
@@ -234,6 +248,7 @@ export const DWARF_PLANETS = {
     glowColor: '#f87171',
     hasRings: false,
     atmosphere: false,
+    recognition: 'candidate',
     nameEn: 'Sedna',
     nameRu: 'Седна',
     typeEn: 'Dwarf Planet',
@@ -263,6 +278,7 @@ export const DWARF_PLANETS = {
     glowColor: '#94a3b8',
     hasRings: false,
     atmosphere: false,
+    recognition: 'candidate',
     nameEn: 'Salacia',
     nameRu: 'Салация',
     typeEn: 'Dwarf Planet',
@@ -272,6 +288,217 @@ export const DWARF_PLANETS = {
     elements: { e: 0.1046039838127425, aAU: 42.05521225409177, iDeg: 23.92719899399624, nodeDeg: 280.254342318715, argPeriDeg: 308.9773054038262, Tp: 2423933.698631460196, nDegPerDay: 0.00361388501348273, epochJD: 2461200.5 },
     source: 'JPL SBDB (sstr=salacia, epoch 2461200.5) + Wikipedia (120347 Salacia)',
   },
+
+  // ---------------------------------------------------------------------------
+  // Additional probable dwarf planets (all reach hydrostatic equilibrium within
+  // their uncertainties). Orbital elements are the same JPL SBDB osculating
+  // solution (epoch JD 2461200.5); physical data from the cited references.
+  // ---------------------------------------------------------------------------
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=varda&phys-par=1&full-prec=1
+  // Physical (Wikipedia, 174567 Varda): mean diameter 648 km (2026 occultation
+  // reanalysis, Proudfoot et al.) -> radius 324 km. Binary system mass 2.675e20 kg;
+  // Varda itself holds ~86-90%, so ~2.35e20 kg is used here. Rotation 5.750824 d
+  // (= 138.02 h) - Varda is likely mutually tidally locked to its moon Ilmare.
+  // Axial tilt is unmeasured: 0 is used as an explicit placeholder.
+  varda: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 324,
+    massKg: 2.35e20,
+    rotPeriodHours: 138.02,
+    axialTiltDeg: 0.0,
+    colorHex: 0x9c8b7a,
+    orbitColor: '#a8a29e',
+    glowColor: '#d6d3d1',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Varda',
+    nameRu: 'Варда',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A large, moderately reddish classical Kuiper Belt object, formally designated 174567 Varda, forming a binary with its moon Ilmare.',
+    descRu: 'Крупный красноватый объект классического пояса Койпера (174567 Варда), образующий двойную систему со спутником Ильмаре.',
+    elements: { e: 0.1422792008234468, aAU: 45.553792965197, iDeg: 21.51272002644964, nodeDeg: 184.0761905128264, argPeriDeg: 184.8433524049403, Tp: 2487001.267037738442, nDegPerDay: 0.003205658525624677, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=varda, epoch 2461200.5) + Wikipedia (174567 Varda; Proudfoot et al. 2026)',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=ixion&phys-par=1&full-prec=1
+  // Physical (Wikipedia, 28978 Ixion): mean diameter 696.78 km (2026 stellar
+  // occultation, Kilic et al.) -> radius 348.4 km. Rotation 12.4 +/- 0.3 h. No mass
+  // has been published (no moon), so mass is an explicit estimate from the radius
+  // assuming a bulk density of 1.0 g/cm3 (a common KBO value). Axial tilt unmeasured: 0.
+  ixion: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 348.4,
+    massKg: 1.77e20,
+    rotPeriodHours: 12.4,
+    axialTiltDeg: 0.0,
+    colorHex: 0xa5674a,
+    orbitColor: '#b45309',
+    glowColor: '#fdba74',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Ixion',
+    nameRu: 'Иксион',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A large plutino (28978 Ixion) in 2:3 resonance with Neptune, with a reddish surface rich in tholins.',
+    descRu: 'Крупный плутино (28978 Иксион) в резонансе 2:3 с Нептуном с красноватой поверхностью, богатой толинами.',
+    elements: { e: 0.2435609285514542, aAU: 39.34646480522989, iDeg: 19.66251532313573, nodeDeg: 71.0808264000478, argPeriDeg: 300.6223377684572, Tp: 2477485.360758701057, nDegPerDay: 0.003993424672999863, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=ixion, epoch 2461200.5) + Wikipedia (28978 Ixion; Kilic et al. 2026) [mass estimated at 1.0 g/cm3]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=307261&phys-par=1&full-prec=1
+  // (307261 Mani, formerly 2002 MS4.) Physical (Wikipedia, 307261 Mani): mean
+  // diameter 796 +/- 24 km (2023) -> radius 398 km. Rotation 14.251 h. Mass is an
+  // explicit estimate from the radius at 1.0 g/cm3 (unmeasured). Axial tilt unknown: 0.
+  mani: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 398,
+    massKg: 2.64e20,
+    rotPeriodHours: 14.251,
+    axialTiltDeg: 0.0,
+    colorHex: 0x8f8577,
+    orbitColor: '#78716c',
+    glowColor: '#d6d3d1',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Mani',
+    nameRu: 'Мани',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A large classical Kuiper Belt object, formally designated 307261 Mani (2002 MS4), with a neutral-coloured surface.',
+    descRu: 'Крупный объект классического пояса Койпера, официально 307261 Мани (2002 MS4), с нейтральной по цвету поверхностью.',
+    elements: { e: 0.1482654554299753, aAU: 41.58863664738092, iDeg: 17.69991360489779, nodeDeg: 216.1403186984926, argPeriDeg: 215.4842690316302, Tp: 2496493.847360775530, nDegPerDay: 0.003674870576376502, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=307261, epoch 2461200.5) + Wikipedia (307261 Mani; Rommel et al. 2023) [mass estimated at 1.0 g/cm3]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=55565&phys-par=1&full-prec=1
+  // (55565 Aya, formerly 2002 AW197.) Physical (Wikipedia, 55565 Aya): mean
+  // diameter 768 +/- 39 km (Vilenius et al. 2014) -> radius 384 km. Rotation 8.86 h.
+  // Mass is an explicit estimate from the radius at 1.0 g/cm3 (unmeasured). Tilt unknown: 0.
+  aya: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 384,
+    massKg: 2.37e20,
+    rotPeriodHours: 8.86,
+    axialTiltDeg: 0.0,
+    colorHex: 0xa98976,
+    orbitColor: '#b45309',
+    glowColor: '#fed7aa',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Aya',
+    nameRu: 'Ая',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A sizable classical Kuiper Belt object, formally designated 55565 Aya (2002 AW197).',
+    descRu: 'Значительный объект классического пояса Койпера, официально 55565 Ая (2002 AW197).',
+    elements: { e: 0.1286825927917718, aAU: 47.36875987690542, iDeg: 24.34033767915258, nodeDeg: 297.3697786526271, argPeriDeg: 294.1459414012872, Tp: 2479622.214741846361, nDegPerDay: 0.00302319423990938, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=55565, epoch 2461200.5) + Wikipedia (55565 Aya; Vilenius et al. 2014) [mass estimated at 1.0 g/cm3]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=208996&phys-par=1&full-prec=1
+  // (208996 Achlys, formerly 2003 AZ84.) Physical (Wikipedia, 208996 Achlys):
+  // dimensions 940 x 766 x 490 km (Dias-Oliveira et al. 2017) -> volume-equivalent
+  // radius ~353 km. Rotation 13.42 h. Achlys has one small moon (S/2005 (208996) 1,
+  // not modelled here). Mass is an explicit 1.0 g/cm3 estimate. Tilt unknown: 0.
+  achlys: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 353,
+    massKg: 1.84e20,
+    rotPeriodHours: 13.42,
+    axialTiltDeg: 0.0,
+    colorHex: 0x9a7f6b,
+    orbitColor: '#a16207',
+    glowColor: '#fde68a',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Achlys',
+    nameRu: 'Ахлис',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A large plutino, formally designated 208996 Achlys (2003 AZ84), with an elongated shape and one known small moon.',
+    descRu: 'Крупный плутино, официально 208996 Ахлис (2003 AZ84), с вытянутой формой и одним небольшим спутником.',
+    elements: { e: 0.1749643183262652, aAU: 39.65674190908469, iDeg: 13.54857109263982, nodeDeg: 251.8991700940268, argPeriDeg: 14.06755482579046, Tp: 2490594.475971509903, nDegPerDay: 0.003946649217918202, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=208996, epoch 2461200.5) + Wikipedia (208996 Achlys; Dias-Oliveira et al. 2017) [mass estimated at 1.0 g/cm3]',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=55637&phys-par=1&full-prec=1
+  // (55637 Uni, formerly 2002 UX25.) Physical (Wikipedia, 55637 Uni): mean
+  // diameter ~610 km (Rommel et al. 2026) -> radius 305 km; mass 1.25e20 kg
+  // (Brown 2013). Rotation 14.382 h. Uni has one small moon (S/2007 (55637) 1,
+  // not modelled here). Axial tilt unmeasured: 0.
+  uni: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 305,
+    massKg: 1.25e20,
+    rotPeriodHours: 14.382,
+    axialTiltDeg: 0.0,
+    colorHex: 0x8a7d70,
+    orbitColor: '#78716c',
+    glowColor: '#e7e5e4',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Uni',
+    nameRu: 'Уни',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'A mid-sized classical Kuiper Belt object, formally designated 55637 Uni (2002 UX25), notably under-dense for its size.',
+    descRu: 'Средний по размеру объект классического пояса Койпера, официально 55637 Уни (2002 UX25), примечательно низкой плотности.',
+    elements: { e: 0.1462441869199175, aAU: 42.92456947386417, iDeg: 19.42327844654774, nodeDeg: 204.6157936874821, argPeriDeg: 276.0993480674751, Tp: 2475423.233840569568, nDegPerDay: 0.003504654029402282, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=55637, epoch 2461200.5) + Wikipedia (55637 Uni; Rommel et al. 2026, Brown 2013)',
+  },
+
+  // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=hygiea&phys-par=1&full-prec=1
+  // Physical (Wikipedia, 10 Hygiea): mean diameter 433 +/- 8 km (Vernazza et al. 2021)
+  // -> radius 216.5 km. Mass 8.236e19 kg (Fuentes-Munoz 2025). Rotation 13.82559 h.
+  // Axial tilt 120 deg to the ecliptic (Vernazza et al. 2021). Hygiea is the fourth-
+  // largest asteroid-belt body and a strong candidate dwarf planet, but its IAU status
+  // is not yet formalised - it is grouped here for completeness.
+  hygiea: {
+    bodyClass: 'dwarf',
+    parentId: null,
+    radiusKm: 216.5,
+    massKg: 8.236e19,
+    rotPeriodHours: 13.82559,
+    axialTiltDeg: 120.0,
+    colorHex: 0x6b6a66,
+    orbitColor: '#57534e',
+    glowColor: '#a8a29e',
+    hasRings: false,
+    atmosphere: false,
+    recognition: 'candidate',
+    nameEn: 'Hygiea',
+    nameRu: 'Гигея',
+    typeEn: 'Dwarf Planet',
+    typeRu: 'Карликовая планета',
+    descEn: 'The fourth-largest body in the asteroid belt and a likely dwarf planet (10 Hygiea), with a nearly spherical shape and a giant impact basin.',
+    descRu: 'Четвёртое по величине тело пояса астероидов и вероятная карликовая планета (10 Гигея) с почти сферической формой и гигантским ударным бассейном.',
+    elements: { e: 0.1067092741240963, aAU: 3.150974033963701, iDeg: 3.829529946447122, nodeDeg: 283.1198927508594, argPeriDeg: 312.4242387344704, Tp: 2461813.200828681790, nDegPerDay: 0.1762125505792448, epochJD: 2461200.5 },
+    source: 'JPL SBDB (sstr=hygiea, epoch 2461200.5) + Wikipedia (10 Hygiea; Vernazza et al. 2021, Fuentes-Munoz 2025)',
+  },
 };
 
-export const ORDERED_DWARF_KEYS = ['ceres','orcus','haumea','quaoar','makemake','gonggong','eris','sedna','salacia'];
+export const ORDERED_DWARF_KEYS = ['ceres','orcus','haumea','quaoar','makemake','gonggong','eris','sedna','salacia','varda','ixion','mani','aya','achlys','uni','hygiea'];
+
+// The four IAU-designated dwarf planets carried by this registry (Pluto, the fifth, lives in
+// PLANETARY_ELEMENTS_J2000). Everything else in ORDERED_DWARF_KEYS is a probable/candidate body.
+export const OFFICIAL_DWARF_KEYS = ['ceres', 'haumea', 'makemake', 'eris'];
+
+// True when the given dwarf-planet key is a formally IAU-designated dwarf planet.
+export function isOfficialDwarf(id) {
+  return OFFICIAL_DWARF_KEYS.includes(id);
+}

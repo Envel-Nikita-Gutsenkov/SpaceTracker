@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSatStore } from '../store/useSatStore';
 import { getTranslation } from '../utils/i18n';
 import { PLANETARY_ELEMENTS_J2000, ORDERED_PLANET_KEYS } from '../utils/planetaryData';
-import { DWARF_PLANETS, ORDERED_DWARF_KEYS, MOONS, ORDERED_MOON_KEYS } from '../utils/smallBodies';
+import { DWARF_PLANETS, ORDERED_DWARF_KEYS, OFFICIAL_DWARF_KEYS, isOfficialDwarf, MOONS, ORDERED_MOON_KEYS } from '../utils/smallBodies';
 
 export default function SearchBar({ minimalist, onFocus }) {
   const allSatellites = useSatStore((s) => s.allSatellites);
@@ -11,6 +11,7 @@ export default function SearchBar({ minimalist, onFocus }) {
   const infoPanelOpen = useSatStore((s) => s.infoPanelOpen);
   const sidebarOpen   = useSatStore((s) => s.sidebarOpen);
   const showDwarfPlanets = useSatStore((s) => s.showDwarfPlanets);
+  const showDwarfCandidates = useSatStore((s) => s.showDwarfCandidates);
   const showMoons        = useSatStore((s) => s.showMoons);
   const isMobile         = useSatStore((s) => s.isMobile);
   const [value, setValue] = useState('');
@@ -33,16 +34,20 @@ export default function SearchBar({ minimalist, onFocus }) {
           bodyClass,
           parentId: parentId || null,
           radiusKm: p.radiusKm,
+          recognition: p.recognition || null,
           category: bodyClass,
           desc: language === 'ru' ? p.descRu : p.descEn,
           data: p,
         });
         const planetItems = ORDERED_PLANET_KEYS.map(k => makeItem(k, PLANETARY_ELEMENTS_J2000[k], 'planet'));
         // Hidden categories are not searchable: a body that is not rendered (its toggle is off)
-        // must not surface as a selectable result.
-        const dwarfItems = showDwarfPlanets
-          ? ORDERED_DWARF_KEYS.map(k => makeItem(k, DWARF_PLANETS[k], 'dwarf'))
-          : [];
+        // must not surface as a selectable result. The IAU-designated dwarf planets and the
+        // unratified candidates are gated separately and listed as two blocks.
+        const dwarfKeys = [
+          ...(showDwarfPlanets ? OFFICIAL_DWARF_KEYS : []),
+          ...(showDwarfCandidates ? ORDERED_DWARF_KEYS.filter(k => !isOfficialDwarf(k)) : []),
+        ];
+        const dwarfItems = dwarfKeys.map(k => makeItem(k, DWARF_PLANETS[k], 'dwarf'));
         const moonItems = showMoons
           ? ORDERED_MOON_KEYS.map(k => makeItem(k, MOONS[k], 'moon', MOONS[k].parentId))
           : [];
@@ -83,7 +88,7 @@ export default function SearchBar({ minimalist, onFocus }) {
       }
     }, 250);
     return () => clearTimeout(timerRef.current);
-  }, [value, allSatellites, language, showDwarfPlanets, showMoons]);
+  }, [value, allSatellites, language, showDwarfPlanets, showDwarfCandidates, showMoons]);
 
   const handleSelect = (sat) => {
     const { setSelectedSat, setSearchQuery } = useSatStore.getState();
@@ -159,7 +164,9 @@ export default function SearchBar({ minimalist, onFocus }) {
               </span>
               <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', marginLeft: '0.5rem', fontFamily: 'monospace' }}>
                 {sat.isPlanet
-                  ? (sat.bodyClass === 'dwarf' ? 'DWARF' : sat.bodyClass === 'moon' ? 'MOON' : 'PLANET')
+                  ? (sat.bodyClass === 'dwarf'
+                      ? (sat.recognition === 'official' ? 'DWARF' : 'CANDIDATE')
+                      : sat.bodyClass === 'moon' ? 'MOON' : 'PLANET')
                   : typeof sat.id === 'number'
                     ? `#${sat.id}`
                     : (sat.agency || '')}

@@ -6,12 +6,13 @@ import { PLANETARY_ELEMENTS_J2000, ORDERED_PLANET_KEYS } from '../utils/planetar
 import { DWARF_PLANETS, ORDERED_DWARF_KEYS, MOONS, ORDERED_MOON_KEYS } from '../utils/smallBodies';
 
 export default function PlanetBar({ onSelectBody, minimalist }) {
-  const { activeBody, language, sidebarOpen, showDwarfPlanets, showMoons } = useSatStore(useShallow((s) => ({
+  const { activeBody, language, sidebarOpen, showDwarfPlanets, showDwarfCandidates, showMoons } = useSatStore(useShallow((s) => ({
     activeBody:  s.activeBody,
     language:    s.language,
     sidebarOpen: s.sidebarOpen,
-    showDwarfPlanets: s.showDwarfPlanets,
-    showMoons:        s.showMoons,
+    showDwarfPlanets:    s.showDwarfPlanets,
+    showDwarfCandidates: s.showDwarfCandidates,
+    showMoons:           s.showMoons,
   })));
   const setActiveBody = useSatStore((s) => s.setActiveBody);
   const isMobile = useSatStore((s) => s.isMobile);
@@ -30,6 +31,7 @@ export default function PlanetBar({ onSelectBody, minimalist }) {
       color: p.orbitColor || '#888888',
       type: isRu ? p.typeRu : p.typeEn,
       desc: isRu ? p.descRu : p.descEn,
+      recognition: p.recognition || 'candidate',
     };
   });
 
@@ -82,12 +84,21 @@ export default function PlanetBar({ onSelectBody, minimalist }) {
 
   // Dropdown is rendered as labelled sections so the growing body catalogue stays navigable.
   // Hidden categories drop out entirely rather than showing as disabled rows.
-  const visibleDwarfs = showDwarfPlanets ? dwarfItems : [];
-  const visibleMoons  = showMoons ? moonItems : [];
+  // Dwarf planets are split by IAU status: formally designated ones (Ceres, Eris, Haumea,
+  // Makemake) come first, then the probable/candidate bodies. Each group is gated by its own
+  // toggle, since the candidates are a separate, unratified category.
+  const officialDwarfs = showDwarfPlanets
+    ? dwarfItems.filter(d => d.recognition === 'official')
+    : [];
+  const candidateDwarfs = showDwarfCandidates
+    ? dwarfItems.filter(d => d.recognition !== 'official')
+    : [];
+  const visibleMoons = showMoons ? moonItems : [];
   const SECTIONS = [
     { label: getTranslation(language, 'section_system', 'CELESTIAL SYSTEM'), items: CELESTIAL_BODIES.slice(0, 3) },
     { label: getTranslation(language, 'section_planets', 'PLANETS'), items: CELESTIAL_BODIES.slice(3, 3 + ORDERED_PLANET_KEYS.filter(k => k !== 'earth').length) },
-    ...(visibleDwarfs.length ? [{ label: getTranslation(language, 'section_dwarfs', 'DWARF PLANETS'), items: visibleDwarfs }] : []),
+    ...(officialDwarfs.length ? [{ label: getTranslation(language, 'section_dwarfs_official', 'IAU DWARF PLANETS'), items: officialDwarfs }] : []),
+    ...(candidateDwarfs.length ? [{ label: getTranslation(language, 'section_dwarfs_candidate', 'CANDIDATE DWARF PLANETS'), items: candidateDwarfs }] : []),
     ...(visibleMoons.length ? [{ label: getTranslation(language, 'section_moons', 'MOONS'), items: visibleMoons }] : []),
   ];
 

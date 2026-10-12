@@ -94,7 +94,8 @@ stays — a network failure can never blank the globe.
 
 Planet and Earth maps load progressively through `TextureLODManager`: a procedural (or
 2K) base tier is shown immediately and higher-resolution tiers stream in by camera
-distance (the 8K Earth layers are active within 6 Earth radii). Each tier is a separate
+distance (the 8K Earth layers stay active at every distance, so pulling back never swaps
+in the coarser image). Each tier is a separate
 texture, decoded off-thread and pre-uploaded. The Earth tiers are preloaded at startup and
 never evicted, so their one-time decode + GPU upload happens during boot and crossing a
 distance threshold is a pure reference swap — zooming never triggers a stall. Planet and
@@ -273,7 +274,7 @@ Space/
 ├── functions/
 │   └── api/celestrak/[[path]].js  Cloudflare Pages edge proxy for the CelesTrak GP feed
 ├── public/
-│   ├── earth_*.webp, earth_night_2048.png   Earth day / night (2K + 8K) / specular / clouds
+│   ├── earth_{day,night}_{2048,8k}.webp   Earth day / night (2K base + 8K, one image series)
 │   ├── {mercury,venus,mars}_*.webp      planet maps (2K base + 4K/8K tiers)
 │   ├── {jupiter,saturn}_*.webp          planet maps (2K base + 4K tier)
 │   ├── {uranus,neptune}_2k.webp         planet maps (2K, no higher master published)

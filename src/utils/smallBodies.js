@@ -13,10 +13,10 @@
 //   'moon'    – parent-relative mean elements (moons.js)
 
 import { PLANETARY_ELEMENTS_J2000 } from './planetaryData.js';
-import { DWARF_PLANETS, ORDERED_DWARF_KEYS } from './dwarfPlanets.js';
+import { DWARF_PLANETS, ORDERED_DWARF_KEYS, OFFICIAL_DWARF_KEYS, isOfficialDwarf } from './dwarfPlanets.js';
 import { MOONS, ORDERED_MOON_KEYS } from './moons.js';
 
-export { DWARF_PLANETS, ORDERED_DWARF_KEYS, MOONS, ORDERED_MOON_KEYS };
+export { DWARF_PLANETS, ORDERED_DWARF_KEYS, OFFICIAL_DWARF_KEYS, isOfficialDwarf, MOONS, ORDERED_MOON_KEYS };
 
 // Every known body keyed by id, each carrying an explicit `bodyClass`.
 export const ALL_BODIES = {};

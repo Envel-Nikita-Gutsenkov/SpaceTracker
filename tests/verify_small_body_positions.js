@@ -25,13 +25,13 @@ register('data:text/javascript,' + encodeURIComponent(loaderSource));
 
 const { PlanetarySystem } = await import('../src/scene/planets/PlanetarySystem.js');
 const { ORDERED_MOON_KEYS, MOONS } = await import('../src/utils/smallBodies.js');
-const { ORDERED_DWARF_KEYS, DWARF_PLANETS } = await import('../src/utils/dwarfPlanets.js');
+const { ORDERED_DWARF_KEYS, OFFICIAL_DWARF_KEYS, DWARF_PLANETS } = await import('../src/utils/dwarfPlanets.js');
 const { ORDERED_PLANET_KEYS } = await import('../src/utils/planetaryData.js');
 const { EARTH_RADIUS_KM } = await import('../src/utils/astronomy.js');
 const { getDwarfPositionThreeJS, getMoonOffsetThreeJS } = await import('../src/utils/smallBodyEphemeris.js');
 
 let passed = 0;
-const TOTAL = 6;
+const TOTAL = 7;
 function test(name, fn) {
   fn();
   passed++;
@@ -206,6 +206,30 @@ test('moons are anchored even when only the Moon toggle is on (dwarfs still hidd
     const off = getMoonOffsetThreeJS(id, date);
     const offLen = Math.hypot(off.x, off.y, off.z);
     assert.ok(Math.abs(dist - offLen) < 1e-6, `moon "${id}" distance ${dist} != offset length ${offLen}`);
+  }
+});
+
+test('official dwarf planets and candidates are gated by two independent toggles', () => {
+  const date = new Date(Date.UTC(2026, 0, 1));
+  const candidates = ORDERED_DWARF_KEYS.filter(id => !OFFICIAL_DWARF_KEYS.includes(id));
+
+  // Only the IAU switch on (args: ...showDwarfPlanets=true, showMoons=false, points off,
+  // showDwarfCandidates=false): the four official dwarfs show, every candidate stays hidden.
+  sys._updateSmallBodies(date, SUN, null, null, null, true, false, true, false);
+  for (const id of OFFICIAL_DWARF_KEYS) {
+    assert.equal(sys.smallBodies.get(id).group.visible, true, `official dwarf "${id}" must show`);
+  }
+  for (const id of candidates) {
+    assert.equal(sys.smallBodies.get(id).group.visible, false, `candidate "${id}" must stay hidden`);
+  }
+
+  // Only the candidate switch on: the exact inverse of the above.
+  sys._updateSmallBodies(date, SUN, null, null, null, true, false, false, false, false, false, true);
+  for (const id of OFFICIAL_DWARF_KEYS) {
+    assert.equal(sys.smallBodies.get(id).group.visible, false, `official dwarf "${id}" must hide`);
+  }
+  for (const id of candidates) {
+    assert.equal(sys.smallBodies.get(id).group.visible, true, `candidate "${id}" must show`);
   }
 });
 
