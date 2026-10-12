@@ -9,6 +9,7 @@ import { OrbitLine }        from './OrbitLine';
 import { VanAllenBelts }    from './VanAllenBelts';
 import { SatelliteModel }   from './SatelliteModel';
 import { SPACECRAFT_3D_REGISTRY, resolveCategoryModel, computeFocusDistances } from './spacecraftModels';
+import { createSpaceEnvironment } from './spaceEnvironment';
 import { MoonObject }       from './Moon';
 import { PlanetarySystem }  from './planets/PlanetarySystem';
 import { PlanetFleet }       from './planets/PlanetFleet';
@@ -126,6 +127,13 @@ export class SceneManager {
 
     // Scene
     this.scene = new THREE.Scene();
+
+    // Image-based lighting. The spacecraft hulls are PBR metals, which have no diffuse term
+    // and reflect nothing without an environment — so their facets render black and appear
+    // to vanish as the specular highlight sweeps them while the camera orbits. A small
+    // pre-filtered space environment gives the metal a reflection to sample (and mip-filtered
+    // roughness, which removes the specular shimmer). See spaceEnvironment.js.
+    this.scene.environment = createSpaceEnvironment(this.renderer);
 
     // Camera: near plane at 0.01 prevents near-plane clipping on close zoom; far at 10,000,000 fits true Solar System
     this.camera = new THREE.PerspectiveCamera(
@@ -668,7 +676,8 @@ export class SceneManager {
         Boolean(store.showMoons),
         Boolean(store.showBodyPoints),
         Boolean(store.showMoonPoints),
-        Boolean(store.showDwarfCandidates)
+        Boolean(store.showDwarfCandidates),
+        Boolean(store.showRealisticShapeModels)
       );
 
       if (this.planets.isStrongZoom) {

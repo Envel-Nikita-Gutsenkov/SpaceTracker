@@ -199,8 +199,13 @@ export class SatelliteModel {
                     m.roughness = 0.4;
                     m.metalness = 0.6;
                   } else {
-                    m.roughness = m.roughness !== undefined ? Math.min(m.roughness, 0.4) : 0.35;
-                    m.metalness = m.metalness !== undefined ? Math.max(m.metalness, 0.5) : 0.6;
+                    // Preserve the exporter's authored metalness/roughness. This used to force
+                    // metalness up and roughness down, which — with no environment map — turned
+                    // every untextured facet into a near-black mirror whose highlight flickered
+                    // as the camera orbited. With the scene's IBL environment in place, the
+                    // authored values are what make the metal read correctly.
+                    if (m.metalness === undefined) m.metalness = 0.1;
+                    if (m.roughness === undefined) m.roughness = 0.5;
                   }
                   m.side = THREE.DoubleSide; // thin/open model geometry must show from both faces
                   m.polygonOffset = true;
@@ -225,8 +230,10 @@ export class SatelliteModel {
                   roughnessMap:     m.roughnessMap || null,
                   metalnessMap:     m.metalnessMap || null,
                   side:             THREE.DoubleSide,
-                  metalness:        0.6,
-                  roughness:        0.35,
+                  // Non-standard material with no authored PBR values: keep it a neutral,
+                  // mostly-dielectric surface so it does not turn into a black mirror.
+                  metalness:        0.1,
+                  roughness:        0.5,
                   transparent:      Boolean(m.transparent && m.opacity < 1.0),
                   opacity:          m.opacity !== undefined ? m.opacity : 1.0,
                   polygonOffset:    true,
