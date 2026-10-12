@@ -131,7 +131,7 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(
       55, window.innerWidth / window.innerHeight, 0.01, 10000000
     );
-    this.camera.position.set(0, 1.5, 3.2);
+    this.camera.position.set(0, 1.5, -3.2);
 
     // Controls: minDistance 1.05 prevents passing through Earth surface & clouds (radius 1.006)
     this.controls = new OrbitControls(this.camera, this.canvas);
@@ -478,7 +478,7 @@ export class SceneManager {
     const moonPos = this.moon.getPosition();
 
     // Position camera near the Moon (radius = 0.2727 units), offset by ~0.8 units
-    const offset = new THREE.Vector3(0.5, 0.4, 0.6).normalize().multiplyScalar(0.9);
+    const offset = new THREE.Vector3(0.5, 0.4, -0.6).normalize().multiplyScalar(0.9);
     this._startFocusTransition(moonPos, offset, 0.32);
     this.controls.maxDistance = 5000000;
   }
@@ -490,7 +490,7 @@ export class SceneManager {
     const earthPosition = this._vFocusZero;
     this.camera.near = 0.01;
     this.camera.updateProjectionMatrix();
-    this._startFocusTransition(earthPosition, new THREE.Vector3(0, 1.5, 3.2), 1.05);
+    this._startFocusTransition(earthPosition, new THREE.Vector3(0, 1.5, -3.2), 1.05);
     this.controls.maxDistance = 5000000;
   }
 
@@ -501,7 +501,7 @@ export class SceneManager {
     const sunPos = this.sun.getPosition();
 
     // Photosphere physical radius is 109.2 units (NASA GSFC Fact Sheet). Place camera at ~330 units
-    const offset = new THREE.Vector3(0, 80.0, 320.0);
+    const offset = new THREE.Vector3(0, 80.0, -320.0);
     this._startFocusTransition(sunPos, offset, 115.0); // Prevent penetrating the photosphere
     this.controls.maxDistance = 5000000;
   }
@@ -531,7 +531,7 @@ export class SceneManager {
     const offsetDist = isSmall
       ? Math.max(0.001, radius * (data?.hasRings ? 7.0 : 4.5))
       : Math.max(3.5, radius * (data?.hasRings ? 6.0 : 4.2));
-    const offset = new THREE.Vector3(offsetDist * 0.7, offsetDist * 0.35, offsetDist * 0.8);
+    const offset = new THREE.Vector3(offsetDist * 0.7, offsetDist * 0.35, -offsetDist * 0.8);
     if (isSmall) {
       this.camera.near = Math.max(1e-4, radius * 0.01);
       this.camera.updateProjectionMatrix();
@@ -630,7 +630,7 @@ export class SceneManager {
     const gmst   = getGMST(date);
     this._gmst   = gmst;
     const sunECI = getSunPositionECI(date);
-    const sunDir = this._vSunDir.set(sunECI.x, sunECI.z, sunECI.y).normalize();
+    const sunDir = this._vSunDir.set(sunECI.x, sunECI.z, -sunECI.y).normalize();
     perfProbe.end();
 
     const selectedSatId = store.selectedSat?.id || null;
@@ -1044,7 +1044,7 @@ export class SceneManager {
           h: 18,
           cx: x + boxW / 2 - 4,
           cy: y,
-          priority: item.level,
+          priority: 1,
         });
       } else {
         const text = store.language === 'ru' ? item.nameRu : item.name;

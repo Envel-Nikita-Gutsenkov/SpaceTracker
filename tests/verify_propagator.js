@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import * as satellite from 'satellite.js';
 
 // Behavioral coverage for the Web Worker propagator. The module registers itself on the
 // global `self.onmessage`, so we install a fake worker scope before importing it, then drive
@@ -108,6 +109,27 @@ test('the propagated ISS position sits at a plausible low-Earth-orbit radius', (
   // ISS orbital radius ~ 6790 km => ~1.066 Earth radii. Accept the perigee..apogee band + margin.
   assert.ok(rEarth > 1.02 && rEarth < 1.12,
     `ISS radius ${rEarth.toFixed(4)} Earth radii is outside the expected LEO band`);
+});
+
+TOTAL++;
+test('worker ECI-to-Three conversion matches the right-handed frame', () => {
+  const date = new Date(Date.UTC(2024, 0, 1, 12));
+  const rec = satellite.twoline2satrec(ISS_TLE_1, ISS_TLE_2);
+  const expected = satellite.propagate(rec, date).position;
+
+  reset();
+  globalThis.self.onmessage({ data: { type: 'init', data: [
+    { id: 25544, tle1: ISS_TLE_1, tle2: ISS_TLE_2 },
+  ] } });
+  reset();
+  globalThis.self.onmessage({ data: { type: 'propagate', data: { timeMs: date.getTime() } } });
+
+  const { msg } = last('positions');
+  const [x, y, z] = msg.positions;
+  const scale = 1 / 6371;
+  assert.ok(Math.abs(x - expected.x * scale) < 1e-6, 'worker X must equal ECI X');
+  assert.ok(Math.abs(y - expected.z * scale) < 1e-6, 'worker Y must equal north-pole ECI Z');
+  assert.ok(Math.abs(z + expected.y * scale) < 1e-6, 'worker Z must equal negative eastward ECI Y');
 });
 
 TOTAL++;

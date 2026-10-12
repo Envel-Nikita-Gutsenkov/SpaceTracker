@@ -11,7 +11,6 @@ import {
   CITY_LABELS,
   CONTINENT_LABELS,
 } from '../src/utils/geography.js';
-import { applyEquirectLongitudeUV } from '../src/scene/planets/equirectUV.js';
 
 let passed = 0;
 let failed = 0;
@@ -32,16 +31,16 @@ const ALL = [...CITY_LABELS, ...CONTINENT_LABELS];
 
 // ---------------------------------------------------------------------------
 // 1. The mesh anchor: a label must land on the exact texture pixel it names.
-//    We rebuild the real Earth geometry, spin it by -gmst, and check that the
-//    vertex sampling the city's equirectangular texel sits under latLonToScene.
+//    Use unmodified SphereGeometry UVs and spin the mesh by +GMST, independently
+//    checking that each city's standard equirectangular texel matches latLonToScene.
 // ---------------------------------------------------------------------------
 const SEG = 512;
 const gmst = 1.234;
-const geo = applyEquirectLongitudeUV(new THREE.SphereGeometry(1, SEG, SEG));
+const geo = new THREE.SphereGeometry(1, SEG, SEG);
 const posAttr = geo.attributes.position;
 const uvAttr = geo.attributes.uv;
 const earthMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial());
-earthMesh.rotation.y = -gmst;
+earthMesh.rotation.y = gmst;
 earthMesh.updateMatrixWorld(true);
 
 function nearestVertexWorld(lat, lon) {
@@ -90,12 +89,12 @@ test('latLonToScene round-trips through sceneToLatLon', () => {
   }
 });
 
-test('longitude increases right ascension (east-positive convention)', () => {
-  // Two points on the equator, 10° apart in longitude, must be 10° apart in world RA.
+test('longitude increases right ascension in the ECI-to-Three frame', () => {
+  // ECI RA is recovered from Three (x, z, -y) as atan2(-z, x).
   const a = latLonToScene(0, 0, 0);
   const b = latLonToScene(0, 10, 0);
-  const raA = Math.atan2(a.z, a.x);
-  const raB = Math.atan2(b.z, b.x);
+  const raA = Math.atan2(-a.z, a.x);
+  const raB = Math.atan2(-b.z, b.x);
   assert.ok(Math.abs((raB - raA) - 10 * DEG) < 1e-9, 'RA must track east longitude');
 });
 
@@ -146,6 +145,32 @@ test('geographyTier is monotonic and switches city → continent → none', () =
       prev = lvl;
     }
   }
+});
+
+test('regional European and Central Asian cities appear without Moscow priority', () => {
+  const regional = ['Moscow', 'Minsk', 'Astana', 'Lisbon', 'Warsaw', 'Stockholm', 'Helsinki', 'Kyiv', 'Ankara'];
+  const byName = new Map(CITY_LABELS.map(city => [city.name, city]));
+  const regionalTier = geographyTier(2.0);
+  assert.equal(regionalTier.level, 2, 'regional zoom should expose level-2 cities');
+
+  for (const name of regional) {
+    const city = byName.get(name);
+    assert.ok(city, `${name} must be in the city data`);
+    assert.ok(city.level <= regionalTier.level, `${name} must appear at regional zoom`);
+  }
+  assert.equal(byName.get('Moscow').level, byName.get('Minsk').level,
+    'Moscow must not outrank Minsk by city tier');
+  assert.equal(byName.get('Moscow').level, byName.get('Astana').level,
+    'Moscow must not outrank Astana by city tier');
+
+  assert.deepEqual(
+    [byName.get('Minsk').lat, byName.get('Minsk').lon, byName.get('Minsk').nameRu],
+    [53.9006, 27.5590, 'Минск'],
+  );
+  assert.deepEqual(
+    [byName.get('Astana').lat, byName.get('Astana').lon, byName.get('Astana').nameRu],
+    [51.1694, 71.4491, 'Астана'],
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -221,15 +246,82 @@ test('projectWorldToScreen maps a facing point to the viewport centre', () => {
   assert.ok(Math.abs(centre.x - W / 2) < 0.5, `centre x off by ${centre.x - W / 2}`);
   assert.ok(Math.abs(centre.y - H / 2) < 0.5, `centre y off by ${centre.y - H / 2}`);
 
-  // +x must land on the right half; +y (up in world) must land on the upper half (small y).
+  // +x lands on the right half; +y (north in Three) lands on the upper half.
   const right = projectWorldToScreen(1, 0, 1, cam, W, H);
-  assert.ok(right.x > W / 2, 'east point must project to the right half');
+  assert.ok(right.x > W / 2, '+x must project to the right half');
   const up = projectWorldToScreen(0, 1, 1, cam, W, H);
-  assert.ok(up.y < H / 2, 'north point must project to the upper half');
+  assert.ok(up.y < H / 2, '+y must project to the upper half');
 
   // A point behind the camera (larger z than the camera) must be flagged invisible.
   const behind = projectWorldToScreen(0, 0, 10, cam, W, H);
   assert.equal(behind.visible, false, 'behind-camera point must be culled');
+});
+
+test('east-positive longitude projects right in a north-up external Three camera', () => {
+  const cam = new THREE.PerspectiveCamera(55, 16 / 9, 0.01, 1000);
+  cam.position.set(0, 0, 3);
+  cam.up.set(0, 1, 0);
+  cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld(true);
+  cam.updateProjectionMatrix();
+  const centreLon = -90 - gmst / DEG;
+  const centre = latLonToScene(0, centreLon, gmst);
+  const east = latLonToScene(0, centreLon + 10, gmst);
+  const west = latLonToScene(0, centreLon - 10, gmst);
+  const north = latLonToScene(10, centreLon, gmst);
+  const projectWithThree = point => new THREE.Vector3(point.x, point.y, point.z).project(cam);
+  const centreNdc = projectWithThree(centre);
+  const eastNdc = projectWithThree(east);
+  const westNdc = projectWithThree(west);
+  const northNdc = projectWithThree(north);
+
+  for (const ndc of [centreNdc, eastNdc, westNdc, northNdc]) {
+    assert.ok(ndc.z > -1 && ndc.z < 1, 'test point must be in front of the camera');
+  }
+  assert.ok(Math.abs(centreNdc.x) < 1e-9, 'central meridian should face the camera');
+  assert.ok(eastNdc.x > centreNdc.x, 'east-positive longitude must project screen-right');
+  assert.ok(westNdc.x < centreNdc.x, 'west longitude must project screen-left');
+  assert.ok(northNdc.y > centreNdc.y, 'north must project toward the top of the screen');
+});
+
+test('a regional European view can retain Moscow, Minsk and Astana together', () => {
+  const cam = new THREE.PerspectiveCamera(55, 16 / 9, 0.01, 1000);
+  const center = latLonToScene(52, 35, gmst, 2.0);
+  cam.position.set(center.x, center.y, center.z);
+  cam.up.set(0, 1, 0);
+  cam.lookAt(0, 0, 0);
+  cam.updateMatrixWorld(true);
+  cam.updateProjectionMatrix();
+
+  const width = 1600, height = 900;
+  const tier = geographyTier(cam.position.length());
+  assert.equal(tier.kind, 'city');
+  const candidates = [];
+  for (const city of CITY_LABELS) {
+    if (city.level > tier.level) continue;
+    const p = latLonToScene(city.lat, city.lon, gmst);
+    if (!isSurfacePointVisible(p, cam.position, 1.0, 0.06)) continue;
+    const screen = projectWorldToScreen(p.x, p.y, p.z, cam, width, height);
+    if (!screen.visible) continue;
+    const textW = estimateTextWidth(city.name, 12, 0.06);
+    const boxW = 9 + textW + 8;
+    candidates.push({
+      id: city.name,
+      x: screen.x,
+      y: screen.y,
+      w: boxW,
+      h: 18,
+      cx: screen.x + boxW / 2 - 4,
+      cy: screen.y,
+      priority: 1,
+    });
+  }
+
+  const kept = selectNonOverlapping(candidates, 26, 6, 3);
+  const keptNames = new Set(kept.map(city => city.id));
+  for (const name of ['Moscow', 'Minsk', 'Astana']) {
+    assert.ok(keptNames.has(name), `${name} should be independently visible at this regional zoom`);
+  }
 });
 
 test('a full label pass only ever emits near-side, on-screen points', () => {

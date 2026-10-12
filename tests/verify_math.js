@@ -23,7 +23,7 @@ import {
   detectCategory
 } from '../src/utils/categories.js';
 import * as THREE from 'three';
-import { applyEarthLongitudeUV, EARTH_ROTATION_Y_SIGN } from '../src/scene/Earth.js';
+import { EARTH_ROTATION_Y_SIGN } from '../src/scene/Earth.js';
 import { applyEquirectLongitudeUV } from '../src/scene/planets/equirectUV.js';
 
 // Independent NOAA low-precision solar position (declination + equation of time).
@@ -76,7 +76,25 @@ runTest('Earth unit sphere matches WGS-84 mean volumetric radius R = 6371 km', (
   assert.ok(Math.abs(r - 1.0) < 1e-12, 'Earth surface must map exactly to radius = 1.000000 in Three.js space');
 });
 
-runTest('ECI (X, Y, Z) mapping to Three.js (x, z, y) preserves Euclidean norm', () => {
+runTest('ECI basis axes map to Three.js (x, z, -y) with right-handedness', () => {
+  const xAxis = eciToThreeJS(EARTH_RADIUS_KM, 0, 0);
+  const yAxis = eciToThreeJS(0, EARTH_RADIUS_KM, 0);
+  const zAxis = eciToThreeJS(0, 0, EARTH_RADIUS_KM);
+
+  assert.ok(Math.abs(xAxis.x - 1) < 1e-12 && Math.abs(xAxis.y) < 1e-12 && Math.abs(xAxis.z) < 1e-12,
+    'ECI +X must map to Three.js +X');
+  assert.ok(Math.abs(yAxis.x) < 1e-12 && Math.abs(yAxis.y) < 1e-12 && Math.abs(yAxis.z + 1) < 1e-12,
+    'ECI +Y must map to Three.js -Z');
+  assert.ok(Math.abs(zAxis.x) < 1e-12 && Math.abs(zAxis.y - 1) < 1e-12 && Math.abs(zAxis.z) < 1e-12,
+    'ECI +Z must map to Three.js +Y');
+
+  const mappedCross = new THREE.Vector3(xAxis.x, xAxis.y, xAxis.z)
+    .cross(new THREE.Vector3(yAxis.x, yAxis.y, yAxis.z));
+  assert.ok(mappedCross.distanceTo(new THREE.Vector3(zAxis.x, zAxis.y, zAxis.z)) < 1e-12,
+    'Mapped +X cross +Y must equal mapped +Z in the right-handed frame');
+});
+
+runTest('ECI (X, Y, Z) mapping to Three.js (x, z, -y) preserves Euclidean norm', () => {
   const eci = { x: 3000, y: 4000, z: 5000 };
   const rEci = Math.sqrt(eci.x ** 2 + eci.y ** 2 + eci.z ** 2);
   const three = eciToThreeJS(eci.x, eci.y, eci.z);
@@ -84,7 +102,7 @@ runTest('ECI (X, Y, Z) mapping to Three.js (x, z, y) preserves Euclidean norm', 
   const reconstructedKm = rThree * EARTH_RADIUS_KM;
   assert.ok(Math.abs(reconstructedKm - rEci) < 1e-10, 'Scale factor must preserve exact Euclidean norm without distortion');
   assert.equal(three.y, eci.z / EARTH_RADIUS_KM, 'Three.js Y axis must represent Earth North Pole / spin axis Z');
-  assert.equal(three.z, eci.y / EARTH_RADIUS_KM, 'Three.js Z axis must represent Vernal Equinox 90 deg E meridian Y');
+  assert.equal(three.z, -eci.y / EARTH_RADIUS_KM, 'Three.js -Z axis must represent Vernal Equinox 90 deg E meridian +Y');
 });
 
 runTest('LEO / ISS altitude (420 km) maps accurately to 1.0659 units', () => {
@@ -781,6 +799,15 @@ runTest('Earth heliocentric position at any date correctly maps to origin (0,0,0
   // Earth distance from Sun should be ~1.00 AU (~149.6M km)
   assert.ok(Math.abs(earthHelio.rAu - 1.00) < 0.03, `Earth heliocentric distance ${earthHelio.rAu} AU must be ~1.0 AU`);
 
+  // The independent ecliptic-to-scene path must also remain a proper rotation.
+  const eclX = helioEclipticToThreeJS(1, 0, 0, 1);
+  const eclY = helioEclipticToThreeJS(0, 1, 0, 1);
+  const eclZ = helioEclipticToThreeJS(0, 0, 1, 1);
+  const mappedCross = new THREE.Vector3(eclX.x, eclX.y, eclX.z)
+    .cross(new THREE.Vector3(eclY.x, eclY.y, eclY.z));
+  assert.ok(mappedCross.distanceTo(new THREE.Vector3(eclZ.x, eclZ.y, eclZ.z)) < 1e-12,
+    'ecliptic basis must preserve handedness through the heliocentric conversion');
+
   // Scene position relative to Sun:
   const earthThreeRel = helioEclipticToThreeJS(earthHelio.xEcl, earthHelio.yEcl, earthHelio.zEcl);
   const rUnits = Math.hypot(earthThreeRel.x, earthThreeRel.y, earthThreeRel.z);
@@ -808,28 +835,33 @@ function earthEquatorDir(geometry, lonDeg) {
   return new THREE.Vector3(pos.getX(best), 0, pos.getZ(best)).normalize();
 }
 
-runTest('Earth sphere geometry maps east longitude to increasing right ascension (no east-west mirror)', () => {
-  const geo = applyEarthLongitudeUV(new THREE.SphereGeometry(1, 256, 8));
+runTest('Standard Earth sphere UV maps east longitude to local angle -longitude', () => {
+  const geo = new THREE.SphereGeometry(1, 256, 8);
   for (const lon of [-90, 0, 90]) {
     const dir = earthEquatorDir(geo, lon);
     const angle = Math.atan2(dir.z, dir.x) * (180 / Math.PI);
-    assert.ok(Math.abs(((angle - lon + 540) % 360) - 180) < 0.5,
-      `Surface point at lon ${lon} must sit at local angle ${lon}, got ${angle.toFixed(2)} (globe is mirrored)`);
+    const expectedLocalAngle = -lon;
+    assert.ok(Math.abs(((angle - expectedLocalAngle + 540) % 360) - 180) < 0.5,
+      `Standard SphereGeometry UV at east longitude ${lon} must point at local angle ${expectedLocalAngle}, got ${angle.toFixed(2)}`);
   }
 });
 
-runTest('Rotated Earth places surface point at RA = GMST + longitude (world orientation invariant)', () => {
-  const geo = applyEarthLongitudeUV(new THREE.SphereGeometry(1, 256, 8));
+runTest('Earth spin sign is +1 for the right-handed ECI-to-Three convention', () => {
+  assert.equal(EARTH_ROTATION_Y_SIGN, 1, 'Earth rotation must use +GMST');
+});
+
+runTest('Earth rotation +GMST places each surface point at RA = GMST + longitude', () => {
+  const geo = new THREE.SphereGeometry(1, 256, 8);
   const norm = (x) => ((x % 360) + 540) % 360 - 180;
   for (const iso of ['2026-10-08T06:00:00Z', '2026-10-08T18:00:00Z', '2026-06-21T09:00:00Z']) {
     const gmstDeg = getGMST(new Date(iso)) * (180 / Math.PI);
     const m = new THREE.Matrix4().makeRotationY(EARTH_ROTATION_Y_SIGN * gmstDeg * (Math.PI / 180));
     for (const lon of [-90, 0, 90]) {
       const world = earthEquatorDir(geo, lon).applyMatrix4(m);
-      const worldRA = Math.atan2(world.z, world.x) * (180 / Math.PI);
+      const worldRA = Math.atan2(-world.z, world.x) * (180 / Math.PI);
       const expected = norm(gmstDeg + lon);
       assert.ok(Math.abs(norm(worldRA - expected)) < 0.5,
-        `At ${iso}: point at lon ${lon} must be at world RA ${expected.toFixed(1)}, got ${worldRA.toFixed(1)}`);
+        `At ${iso}: +GMST must put lon ${lon} at world RA ${expected.toFixed(1)}, got ${worldRA.toFixed(1)}`);
     }
   }
 });
@@ -851,9 +883,8 @@ runTest('Rendered subsolar longitude matches NOAA at 06:00 and 18:00 UTC (where 
   }
 });
 
-runTest('Shared equirect UV helper de-mirrors any sphere radius (Moon & planets use it too)', () => {
-  // The Earth fix was generalised into applyEquirectLongitudeUV, applied to the Moon and the
-  // planet meshes. Verify the longitude→local-angle mapping holds for a non-Earth radius.
+runTest('Shared equirect UV helper maps Moon and planet longitudes independently of radius', () => {
+  // Moon and planet maps retain the shared horizontal UV flip; Earth uses standard SphereGeometry UVs.
   const geo = applyEquirectLongitudeUV(new THREE.SphereGeometry(MOON_RADIUS_UNITS, 360, 8));
   for (const lon of [-120, -45, 0, 45, 120]) {
     const dir = earthEquatorDir(geo, lon);

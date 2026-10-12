@@ -34,12 +34,13 @@ export function getSunPositionECI(date) {
 
 // ECI km → Three.js units (Earth radius = 1.0 unit)
 // ECI: X=vernal equinox, Y=90° east in equatorial plane, Z=north pole
-// Three.js: Y=up (north pole), X=right, Z=toward viewer
+// Three.js: Y=up (north pole), X=right, Z=toward viewer. This is a proper rotation,
+// preserving handedness: ECI +X × +Y = +Z maps to Three +X × -Z = +Y.
 export function eciToThreeJS(x, y, z) {
   return {
     x: x / EARTH_RADIUS_KM,
     y: z / EARTH_RADIUS_KM,
-    z: y / EARTH_RADIUS_KM,
+    z: -y / EARTH_RADIUS_KM,
   };
 }
 

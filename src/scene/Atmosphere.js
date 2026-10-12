@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { EARTH_RADIUS_KM } from '../utils/astronomy.js';
 import { getBodyData } from '../utils/smallBodies.js';
 import { ATMOSPHERE_BODIES, atmosphereLimbRim } from './planetAtmospheres.js';
+import { resolveBodyAxesKm } from '../utils/bodyShape.js';
 
 // Atmospheric limb glow.
 //
@@ -73,8 +74,14 @@ export class Atmosphere {
       const data = getBodyData(id);
       if (!data || !(data.radiusKm > 0)) continue;
 
-      const radiusUnits = data.radiusKm / EARTH_RADIUS_KM;
-      const shellRadius = radiusUnits * (1 + cfg.height);
+      // The shell must hug the body's actual surface, so it inherits its shape: an oblate planet
+      // (Jupiter, Saturn…) would otherwise let the equatorial limb sink inside its own equator,
+      // because the shell radius is derived from the volume-equivalent radiusKm. Bake the body's
+      // semi-axes x (1+height) into the geometry and recompute normals so the limb normal is exact
+      // on the squashed shell. For a spherical body this is exactly the old
+      // `SphereGeometry(shellRadius)`.
+      const axes = resolveBodyAxesKm(data);
+      const grow = 1 + cfg.height;
 
       const uniforms = {
         sunDir:    { value: new THREE.Vector3(1, 0, 0) },
@@ -84,8 +91,16 @@ export class Atmosphere {
         limbRim:   { value: atmosphereLimbRim(cfg.height) },
       };
 
+      const shellGeo = new THREE.SphereGeometry(1, 64, 64);
+      shellGeo.scale(
+        (axes.x / EARTH_RADIUS_KM) * grow,
+        (axes.y / EARTH_RADIUS_KM) * grow,
+        (axes.z / EARTH_RADIUS_KM) * grow,
+      );
+      shellGeo.computeVertexNormals();
+
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(shellRadius, 64, 64),
+        shellGeo,
         new THREE.ShaderMaterial({
           uniforms,
           vertexShader:   VERT,
@@ -103,13 +118,20 @@ export class Atmosphere {
       // dwarf planets and moons — the show/hide visibility for free. Earth sits at the scene
       // origin (it is rendered by Earth.js, not by PlanetarySystem).
       let parent = null;
+      let tiltRad = 0;
       if (id === 'earth') {
         parent = scene;
       } else if (planetarySystem) {
         const obj = planetarySystem.planets?.get(id) || planetarySystem.smallBodies?.get(id);
         parent = obj?.group || null;
+        tiltRad = obj?.tiltRad || 0;
       }
       if (!parent) continue;
+
+      // Align the oblate shell's polar axis with the body's spin axis (the body mesh carries the
+      // same tilt; the group itself is untilted).
+      mesh.rotation.order = 'ZYX';
+      mesh.rotation.z = -tiltRad;
 
       parent.add(mesh);
       mesh.visible = false;

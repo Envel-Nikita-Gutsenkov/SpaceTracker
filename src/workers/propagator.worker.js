@@ -45,10 +45,10 @@ self.onmessage = (e) => {
         if (pv && pv.position && !isNaN(pv.position.x)) {
           const p   = pv.position;
           const R   = 6371;
-          // ECI → Three.js: north pole (ECI Z) → Three.js Y
+          // Right-handed ECI → Three.js: X → X, north pole Z → Y, east Y → -Z.
           positions[i * 3]     = p.x / R;
           positions[i * 3 + 1] = p.z / R;
-          positions[i * 3 + 2] = p.y / R;
+          positions[i * 3 + 2] = -p.y / R;
           valid[i] = 1;
         }
       } catch (_) {

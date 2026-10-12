@@ -851,7 +851,7 @@ export class SunObject {
             const sunStep = getSunPositionECI(new Date(nowMs - frac * tropicalYearMs));
             base[i * 3]     = -sunStep.x * AU_UNITS;
             base[i * 3 + 1] = -sunStep.z * AU_UNITS; // ECI z -> Three.js y
-            base[i * 3 + 2] = -sunStep.y * AU_UNITS; // ECI y -> Three.js z
+            base[i * 3 + 2] = sunStep.y * AU_UNITS;  // -ECI y -> Three.js z
             // Directional white gradient: brightest (1.0) right at Earth, tapering to 0.15 ahead
             bright[i] = 0.15 + 0.85 * Math.pow(1.0 - frac, 1.4);
           }

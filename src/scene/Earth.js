@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { TextureLODManager } from './planets/TextureLODManager.js';
-import { applyEquirectLongitudeUV } from './planets/equirectUV.js';
 import {
   EARTH_TWILIGHT,
   EARTH_SUN_DIFFUSE,
@@ -145,18 +144,9 @@ const CLOUD_MAX_OPACITY = 0.65;
 
 const textureLod = new TextureLODManager();
 
-// Sign of the mesh's axial spin. `rotation.y = EARTH_ROTATION_Y_SIGN * gmst` puts the prime
-// meridian at world right ascension GMST (correct astronomical convention).
-export const EARTH_ROTATION_Y_SIGN = -1;
-
-// Three.js SphereGeometry lays an equirectangular map's longitude toward −Z as u grows, so a
-// point at east longitude ends up at *decreasing* right ascension — the mirror of the
-// astronomical convention (east longitude ⇒ increasing RA). Mirroring the horizontal UV makes
-// a surface point at east longitude λ land at world RA GMST + λ once the mesh is spun by
-// `rotation.y = EARTH_ROTATION_Y_SIGN * gmst`. Without this the globe (and therefore the
-// day/night terminator) is east-west mirrored. Verified against NOAA solar position in tests.
-// Re-exported from the shared helper so the Moon and planets share the exact same convention.
-export const applyEarthLongitudeUV = applyEquirectLongitudeUV;
+// Standard SphereGeometry UVs map east-positive longitude toward local -Z. With a +GMST spin,
+// this puts each surface point at its astronomical right ascension without reflecting the frame.
+export const EARTH_ROTATION_Y_SIGN = 1;
 
 export class Earth {
   constructor(scene, renderer = null) {
@@ -200,7 +190,7 @@ export class Earth {
       nightLights: { value: 1.0 },
     };
 
-    const geo = applyEarthLongitudeUV(new THREE.SphereGeometry(1.0, 96, 96));
+    const geo = new THREE.SphereGeometry(1.0, 96, 96);
     const mat = new THREE.ShaderMaterial({
       uniforms:       this.uniforms,
       vertexShader:   VERT,
@@ -219,7 +209,7 @@ export class Earth {
       uOpacity: { value: CLOUD_MAX_OPACITY },
     };
 
-    const cloudGeo = applyEarthLongitudeUV(new THREE.SphereGeometry(1.006, 128, 128));
+    const cloudGeo = new THREE.SphereGeometry(1.006, 128, 128);
     const cloudMat = new THREE.ShaderMaterial({
       uniforms:       this.cloudUniforms,
       vertexShader:   CLOUD_VERT,

@@ -218,17 +218,22 @@ test('Planet mesh builder binds the fresh real-map texture to the material', () 
   assert.match(src, /sphereMat\.map\s*=\s*realTexture/, 'must bind the real map onto the material');
 });
 
-test('Planet, Moon and Earth spheres all de-mirror their equirectangular maps', () => {
-  // Standard east-positive equirectangular maps render east-west mirrored on THREE.SphereGeometry
-  // unless the horizontal UV is flipped. All three bodies must use the shared helper.
+test('Moon and planets retain the shared equirectangular UV flip', () => {
   for (const rel of ['src/scene/planets/PlanetMeshBuilder.js', 'src/scene/Moon.js']) {
     const src = readSource(rel);
     assert.match(src, /applyEquirectLongitudeUV\s*\(\s*new THREE\.SphereGeometry/,
       `${rel} must build its sphere through applyEquirectLongitudeUV`);
   }
+});
+
+test('Earth uses standard sphere UVs instead of the shared horizontal UV flip', () => {
   const earth = readSource('src/scene/Earth.js');
-  assert.match(earth, /applyEarthLongitudeUV\s*=\s*applyEquirectLongitudeUV/,
-    'Earth must reuse the shared UV helper so every globe shares one convention');
+  assert.ok(/const geo\s*=\s*new THREE\.SphereGeometry\(1\.0,/.test(earth),
+    'Earth surface must use an unmodified SphereGeometry');
+  assert.ok(/const cloudGeo\s*=\s*new THREE\.SphereGeometry\(1\.006,/.test(earth),
+    'Earth clouds must use unmodified SphereGeometry UVs as well');
+  assert.ok(!/applyEarthLongitudeUV\s*\(\s*new THREE\.SphereGeometry/.test(earth),
+    'Earth must not apply the shared horizontal UV flip to its surface or clouds');
 });
 
 // ---------------------------------------------------------------------------

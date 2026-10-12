@@ -30,7 +30,7 @@ const PLANET_RADII_KM = {
 };
 
 const DWARF_RADII_KM = {
-  ceres: 469.7, orcus: 455, haumea: 780, quaoar: 549, makemake: 715,
+  ceres: 469.7, orcus: 455, haumea: 772, quaoar: 549, makemake: 715,
   gonggong: 615, eris: 1163, sedna: 498, salacia: 419,
   varda: 324, ixion: 348.4, mani: 398, aya: 384, achlys: 353, uni: 305, hygiea: 216.5,
 };
@@ -201,14 +201,20 @@ test('synchronous moons are tidally locked (rotPeriodHours matches orbital perio
   }
 });
 
-test('dwarf planets Eris and Salacia are tidally locked to their moons', () => {
-  const expectedEris = MOONS.dysnomia.elements.periodDays * 24;
-  assert.ok(relDiff(DWARF_PLANETS.eris.rotPeriodHours, expectedEris) <= 0.01,
-    `Eris.rotPeriodHours=${DWARF_PLANETS.eris.rotPeriodHours} vs Dysnomia period ${expectedEris}`);
-
-  const expectedSalacia = MOONS.actaea.elements.periodDays * 24;
-  assert.ok(relDiff(DWARF_PLANETS.salacia.rotPeriodHours, expectedSalacia) <= 0.01,
-    `Salacia.rotPeriodHours=${DWARF_PLANETS.salacia.rotPeriodHours} vs Actaea period ${expectedSalacia}`);
+test('dwarf planets Eris, Salacia and Varda are tidally locked to their moons', () => {
+  // Eris–Dysnomia, Salacia–Actaea and Varda–Ilmarë are mutually synchronised (Wikipedia
+  // infoboxes; Szakáts et al. 2023; Collyer et al. 2025). JPL SBDB still lists the older,
+  // superseded short spins for Eris/Salacia, so it is deliberately NOT the source here.
+  const locks = [
+    ['eris', 'dysnomia'],
+    ['salacia', 'actaea'],
+    ['varda', 'ilmare'],
+  ];
+  for (const [dwarf, moon] of locks) {
+    const expected = MOONS[moon].elements.periodDays * 24;
+    assert.ok(relDiff(DWARF_PLANETS[dwarf].rotPeriodHours, expected) <= 0.01,
+      `${dwarf}.rotPeriodHours=${DWARF_PLANETS[dwarf].rotPeriodHours} vs ${moon} period ${expected}`);
+  }
 });
 
 test('every body axial tilt is finite and within [0, 180] deg', () => {

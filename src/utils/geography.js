@@ -1,15 +1,14 @@
 // Geographic surface labels for the Earth globe.
 //
-// The whole point of this layer is that a label must sit on the *exact* spot it names, so
-// the lat/lon → scene conversion is derived from the same convention the Earth mesh uses:
-// the sphere is UV-mirrored (see equirectUV.js) and spun by `rotation.y = -gmst`, which puts
-// a surface point at east longitude λ at world right ascension GMST + λ. The tests pin this
-// against the real `SphereGeometry` so a drift in either the mesh or this math fails loudly.
+// Geographic labels use the right-handed ECI → Three mapping (x, y, z) → (x, z, -y).
+// Standard SphereGeometry UVs place east-positive longitude in that same direction, and
+// Earth rotation is +GMST, so longitude λ appears at world right ascension GMST + λ.
+// Tests pin this convention against unmodified SphereGeometry vertices.
 
 const DEG = Math.PI / 180;
 
-// Geodetic (lat, lon) → scene position on a sphere of the given radius, in the same frame as
-// the Earth mesh (`y` is the north pole, `x`/`z` are the equatorial plane at RA = lon + gmst).
+// Geodetic (lat, lon) → scene position using ECI (x, y, z) → Three (x, z, -y).
+// Three's +y axis is north; east-positive RA increases toward -z at GMST = 0.
 export function latLonToScene(latDeg, lonDeg, gmst, radius = 1.0) {
   const lat = latDeg * DEG;
   const lon = lonDeg * DEG;
@@ -17,7 +16,7 @@ export function latLonToScene(latDeg, lonDeg, gmst, radius = 1.0) {
   return {
     x: radius * cosLat * Math.cos(lon + gmst),
     y: radius * Math.sin(lat),
-    z: radius * cosLat * Math.sin(lon + gmst),
+    z: -radius * cosLat * Math.sin(lon + gmst),
   };
 }
 
@@ -27,7 +26,7 @@ export function sceneToLatLon(x, y, z, gmst, radius = 1.0) {
   const r = Math.hypot(x, y, z);
   if (r <= 0) return { lat: 0, lon: 0 };
   const lat = Math.asin(Math.max(-1, Math.min(1, y / r))) / DEG;
-  const ra = Math.atan2(z, x);
+  const ra = Math.atan2(-z, x);
   let lon = (ra - gmst) / DEG;
   lon = ((lon % 360) + 540) % 360 - 180;
   return { lat, lon, radius: r / radius };
@@ -135,7 +134,6 @@ export const CITY_LABELS = [
   { name: 'New York', nameRu: 'Нью-Йорк', lat: 40.7128, lon: -74.0060, level: 1 },
   { name: 'Beijing', nameRu: 'Пекин', lat: 39.9042, lon: 116.4074, level: 1 },
   { name: 'London', nameRu: 'Лондон', lat: 51.5074, lon: -0.1278, level: 1 },
-  { name: 'Moscow', nameRu: 'Москва', lat: 55.7558, lon: 37.6173, level: 1 },
   { name: 'Paris', nameRu: 'Париж', lat: 48.8566, lon: 2.3522, level: 1 },
   { name: 'Los Angeles', nameRu: 'Лос-Анджелес', lat: 34.0522, lon: -118.2437, level: 1 },
 
@@ -160,6 +158,15 @@ export const CITY_LABELS = [
   { name: 'Toronto', nameRu: 'Торонто', lat: 43.6532, lon: -79.3832, level: 2 },
   { name: 'Chicago', nameRu: 'Чикаго', lat: 41.8781, lon: -87.6298, level: 2 },
   { name: 'Houston', nameRu: 'Хьюстон', lat: 29.7604, lon: -95.3698, level: 2 },
+  { name: 'Moscow', nameRu: 'Москва', lat: 55.7558, lon: 37.6173, level: 2 },
+  { name: 'Lisbon', nameRu: 'Лиссабон', lat: 38.7223, lon: -9.1393, level: 2 },
+  { name: 'Warsaw', nameRu: 'Варшава', lat: 52.2297, lon: 21.0122, level: 2 },
+  { name: 'Stockholm', nameRu: 'Стокгольм', lat: 59.3293, lon: 18.0686, level: 2 },
+  { name: 'Helsinki', nameRu: 'Хельсинки', lat: 60.1699, lon: 24.9384, level: 2 },
+  { name: 'Kyiv', nameRu: 'Киев', lat: 50.4501, lon: 30.5234, level: 2 },
+  { name: 'Ankara', nameRu: 'Анкара', lat: 39.9334, lon: 32.8597, level: 2 },
+  { name: 'Minsk', nameRu: 'Минск', lat: 53.9006, lon: 27.5590, level: 2 },
+  { name: 'Astana', nameRu: 'Астана', lat: 51.1694, lon: 71.4491, level: 2 },
 
   // Level 3 — large cities
   { name: 'Nairobi', nameRu: 'Найроби', lat: -1.2921, lon: 36.8219, level: 3 },
@@ -194,12 +201,6 @@ export const CITY_LABELS = [
   { name: 'Reykjavik', nameRu: 'Рейкьявик', lat: 64.1466, lon: -21.9426, level: 4 },
   { name: 'Anchorage', nameRu: 'Анкоридж', lat: 61.2181, lon: -149.9003, level: 4 },
   { name: 'Honolulu', nameRu: 'Гонолулу', lat: 21.3069, lon: -157.8583, level: 4 },
-  { name: 'Lisbon', nameRu: 'Лиссабон', lat: 38.7223, lon: -9.1393, level: 4 },
-  { name: 'Warsaw', nameRu: 'Варшава', lat: 52.2297, lon: 21.0122, level: 4 },
-  { name: 'Stockholm', nameRu: 'Стокгольм', lat: 59.3293, lon: 18.0686, level: 4 },
-  { name: 'Helsinki', nameRu: 'Хельсинки', lat: 60.1699, lon: 24.9384, level: 4 },
-  { name: 'Kyiv', nameRu: 'Киев', lat: 50.4501, lon: 30.5234, level: 4 },
-  { name: 'Ankara', nameRu: 'Анкара', lat: 39.9334, lon: 32.8597, level: 4 },
 ];
 
 // Representative interior points (not centroids) so each name reads clearly over its landmass.

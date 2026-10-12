@@ -113,6 +113,8 @@ export const PLANETARY_ELEMENTS_J2000 = {
     longPeri: 14.72847983,  longPeriRate: 0.21252668,
     longNode: 100.51797057, longNodeRate: -0.26207006,
     radiusKm: 69911.0,
+    // Oblate spheroid: equatorial 71492 km, polar 66854 km (JPL Planetary Fact Sheet).
+    shape: { aKm: 71492, bKm: 71492, cKm: 66854 },
     massKg: 1.8982e27,
     rotPeriodHours: 9.925,
     axialTiltDeg: 3.13,
@@ -136,6 +138,8 @@ export const PLANETARY_ELEMENTS_J2000 = {
     longPeri: 92.59887831,  longPeriRate: -0.41897216,
     longNode: 113.66242448, longNodeRate: -0.28867794,
     radiusKm: 58232.0,
+    // Strongly oblate: equatorial 60268 km, polar 54364 km (JPL Planetary Fact Sheet).
+    shape: { aKm: 60268, bKm: 60268, cKm: 54364 },
     massKg: 5.6834e26,
     rotPeriodHours: 10.656,
     axialTiltDeg: 26.73,
@@ -161,6 +165,8 @@ export const PLANETARY_ELEMENTS_J2000 = {
     longPeri: 170.95427630, longPeriRate: 0.40805281,
     longNode: 74.01692503,  longNodeRate: 0.04240589,
     radiusKm: 25362.0,
+    // Oblate spheroid: equatorial 25559 km, polar 24973 km (JPL Planetary Fact Sheet).
+    shape: { aKm: 25559, bKm: 25559, cKm: 24973 },
     massKg: 8.6810e25,
     rotPeriodHours: -17.24, // Retrograde rotation
     axialTiltDeg: 97.77,   // Tilted sideways on its orbital plane
@@ -186,6 +192,8 @@ export const PLANETARY_ELEMENTS_J2000 = {
     longPeri: 44.96476227,  longPeriRate: -0.32241464,
     longNode: 131.78422574, longNodeRate: -0.00508664,
     radiusKm: 24622.0,
+    // Oblate spheroid: equatorial 24764 km, polar 24341 km (JPL Planetary Fact Sheet).
+    shape: { aKm: 24764, bKm: 24764, cKm: 24341 },
     massKg: 1.02413e26,
     rotPeriodHours: 16.11,
     axialTiltDeg: 28.32,

@@ -112,14 +112,12 @@ export function helioEclipticToThreeJS(xEcl, yEcl, zEcl, scale = AU_UNITS) {
   const yEci = yEcl * cosEps - zEcl * sinEps;
   const zEci = yEcl * sinEps + zEcl * cosEps;
 
-  // ECI to Three.js:
-  // Three.js X = ECI X
-  // Three.js Y = ECI Z (North Pole)
-  // Three.js Z = ECI Y
+  // ECI to Three.js, as a right-handed rotation:
+  // Three.js X = ECI X; Y = ECI Z (North Pole); Z = -ECI Y (east).
   return {
     x: xEci * scale,
     y: zEci * scale,
-    z: yEci * scale,
+    z: -yEci * scale,
   };
 }
 

@@ -27,6 +27,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'mars',
     radiusKm: 11.2667,
+    // Triaxial: 25.90 x 22.60 x 18.32 km (Wikipedia/JPL).
+    shape: { aKm: 12.95, bKm: 11.30, cKm: 9.16 },
     massKg: 1.0659e16,
     rotPeriodHours: 7.649,
     axialTiltDeg: 0,
@@ -49,6 +51,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'mars',
     radiusKm: 6.2,
+    // Triaxial: 16.08 x 11.78 x 10.22 km (Wikipedia/JPL).
+    shape: { aKm: 8.04, bKm: 5.89, cKm: 5.11 },
     massKg: 1.4762e15,
     rotPeriodHours: 30.3,
     axialTiltDeg: 0,
@@ -173,6 +177,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'jupiter',
     radiusKm: 83.5,
+    // Triaxial: 252 x 146 x 126 km (Wikipedia/JPL).
+    shape: { aKm: 126, bKm: 73, cKm: 63 },
     massKg: 2.4656e18,
     rotPeriodHours: 11.998,
     axialTiltDeg: 0,
@@ -195,6 +201,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'jupiter',
     radiusKm: 49.3,
+    // Triaxial: 116 x 98 x 84 km (Wikipedia/JPL).
+    shape: { aKm: 58, bKm: 49, cKm: 42 },
     massKg: 4.5174e17,
     rotPeriodHours: 16.2265,
     axialTiltDeg: 0,
@@ -217,6 +225,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'jupiter',
     radiusKm: 8.2,
+    // Triaxial: 20 x 16 x 14 km (Wikipedia/JPL).
+    shape: { aKm: 10, bKm: 8, cKm: 7 },
     massKg: 2.0976e15,
     rotPeriodHours: 7.15824,
     axialTiltDeg: 0,
@@ -239,6 +249,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'jupiter',
     radiusKm: 21.5,
+    // Triaxial: 60 x 40 x 34 km (Wikipedia/JPL).
+    shape: { aKm: 30, bKm: 20, cKm: 17 },
     massKg: 3.7457e16,
     rotPeriodHours: 7.074696,
     axialTiltDeg: 0,
@@ -268,6 +280,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 198.2,
+    // Triaxial: 413.20 x 391.46 x 380.94 km (Wikipedia/JPL).
+    shape: { aKm: 206.6, bKm: 195.73, cKm: 190.47 },
     massKg: 3.7493e19,
     rotPeriodHours: 22.618,
     axialTiltDeg: 0,
@@ -290,6 +304,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 252.1,
+    // Triaxial: 512.42 x 502.78 x 497.26 km (Wikipedia/JPL).
+    shape: { aKm: 256.21, bKm: 251.39, cKm: 248.63 },
     massKg: 1.0802e20,
     rotPeriodHours: 32.885,
     axialTiltDeg: 0,
@@ -312,6 +328,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 531.1,
+    // Triaxial: 1076.78 x 1056.74 x 1052.48 km (Wikipedia/JPL).
+    shape: { aKm: 538.39, bKm: 528.37, cKm: 526.24 },
     massKg: 6.1749e20,
     rotPeriodHours: 45.307,
     axialTiltDeg: 0,
@@ -400,6 +418,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 734.5,
+    // Triaxial: 1493.4 x 1491.4 x 1424.2 km (full axes; Wikipedia/JPL).
+    shape: { aKm: 746.7, bKm: 745.7, cKm: 712.1 },
     massKg: 1.8056e21,
     rotPeriodHours: 1903.944,
     axialTiltDeg: 0,
@@ -431,6 +451,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 14.0,
+    // Triaxial: 34.6 x 28.2 x 21.0 km (Wikipedia/JPL).
+    shape: { aKm: 17.3, bKm: 14.1, cKm: 10.5 },
     massKg: 4.1951e15,
     rotPeriodHours: 13.801224,
     axialTiltDeg: 0,
@@ -453,6 +475,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 15.1,
+    // Triaxial: 40.8 x 35.4 x 18.6 km (Wikipedia/JPL).
+    shape: { aKm: 20.4, bKm: 17.7, cKm: 9.3 },
     massKg: 5.5436e15,
     rotPeriodHours: 14.510448,
     axialTiltDeg: 0,
@@ -475,6 +499,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 43.1,
+    // Triaxial: 137.0 x 81.0 x 56.2 km (Wikipedia/JPL).
+    shape: { aKm: 68.5, bKm: 40.5, cKm: 28.1 },
     massKg: 1.6047e17,
     rotPeriodHours: 14.781072,
     axialTiltDeg: 0,
@@ -497,6 +523,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 40.6,
+    // Triaxial: 103 x 79 x 63 km (Wikipedia/JPL).
+    shape: { aKm: 51.5, bKm: 39.5, cKm: 31.5 },
     massKg: 1.3874e17,
     rotPeriodHours: 15.152856,
     axialTiltDeg: 0,
@@ -519,6 +547,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 89.2,
+    // Triaxial: 203.4 x 185.8 x 149.0 km (Wikipedia/JPL).
+    shape: { aKm: 101.7, bKm: 92.9, cKm: 74.5 },
     massKg: 1.8971e18,
     rotPeriodHours: 16.736472,
     axialTiltDeg: 0,
@@ -541,6 +571,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 58.2,
+    // Triaxial: 129.6 x 116.2 x 107.0 km (Wikipedia/JPL).
+    shape: { aKm: 64.8, bKm: 58.1, cKm: 53.5 },
     massKg: 5.2650e17,
     rotPeriodHours: 16.728288,
     axialTiltDeg: 0,
@@ -563,6 +595,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 18.0,
+    // Triaxial: 45.2 x 39.2 x 26.6 km (Wikipedia/JPL).
+    shape: { aKm: 22.6, bKm: 19.6, cKm: 13.3 },
     massKg: 7.1917e15,
     rotPeriodHours: 65.685984,
     axialTiltDeg: 0,
@@ -585,6 +619,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'saturn',
     radiusKm: 135.0,
+    // Triaxial: 361.8 x 258.0 x 204.0 km (Wikipedia); very irregular, chaotically rotating.
+    shape: { aKm: 180.9, bKm: 129, cKm: 102 },
     massKg: 5.5513e18,
     // Hyperion is NOT tidally locked: its rotation is chaotic, with a mean period of ~13 days.
     rotPeriodHours: 312.0,
@@ -615,6 +651,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'uranus',
     radiusKm: 235.8,
+    // Triaxial: 480.8 x 468.4 x 465.8 km (Wikipedia/JPL).
+    shape: { aKm: 240.4, bKm: 234.2, cKm: 232.9 },
     massKg: 6.59e19,
     rotPeriodHours: 33.924,
     axialTiltDeg: 0,
@@ -813,6 +851,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'neptune',
     radiusKm: 40,
+    // Triaxial: 108 x 100 x 52 km (Wikipedia/JPL).
+    shape: { aKm: 54, bKm: 50, cKm: 26 },
     massKg: 3.5344e17,
     rotPeriodHours: 7.465872,
     axialTiltDeg: 0,
@@ -835,6 +875,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'neptune',
     radiusKm: 74,
+    // Triaxial: 180 x 148 x 128 km (Wikipedia/JPL).
+    shape: { aKm: 90, bKm: 74, cKm: 64 },
     massKg: 1.7489e18,
     rotPeriodHours: 8.031744,
     axialTiltDeg: 0,
@@ -879,6 +921,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'neptune',
     radiusKm: 96,
+    // Triaxial: 216 x 204 x 168 km (Wikipedia/JPL).
+    shape: { aKm: 108, bKm: 102, cKm: 84 },
     massKg: 3.8183e18,
     rotPeriodHours: 13.319736,
     axialTiltDeg: 0,
@@ -961,6 +1005,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'pluto',
     radiusKm: 5.2,
+    // Triaxial: 16 x 9 x 8 km (Wikipedia/JPL; poorly constrained).
+    shape: { aKm: 8, bKm: 4.5, cKm: 4 },
     massKg: 3.5e15,
     rotPeriodHours: 483.84,
     axialTiltDeg: 0,
@@ -983,6 +1029,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'pluto',
     radiusKm: 18,
+    // Triaxial: 49.8 x 33.2 x 31.1 km (Wikipedia/JPL).
+    shape: { aKm: 24.9, bKm: 16.6, cKm: 15.55 },
     massKg: 4.5e16,
     rotPeriodHours: 596.4,
     axialTiltDeg: 0,
@@ -1005,6 +1053,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'pluto',
     radiusKm: 6.0,
+    // Triaxial: 19 x 10 x 9 km (Wikipedia/JPL; poorly constrained).
+    shape: { aKm: 9.5, bKm: 5, cKm: 4.5 },
     massKg: 1.65e16,
     rotPeriodHours: 772.08,
     axialTiltDeg: 0,
@@ -1027,6 +1077,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'pluto',
     radiusKm: 18.5,
+    // Triaxial: 50.9 x 36.1 x 30.9 km (Wikipedia/JPL).
+    shape: { aKm: 25.45, bKm: 18.05, cKm: 15.45 },
     massKg: 4.8e16,
     rotPeriodHours: 916.8,
     axialTiltDeg: 0,
@@ -1086,6 +1138,8 @@ export const MOONS = {
     bodyClass: 'moon',
     parentId: 'haumea',
     radiusKm: 185.0,
+    // Triaxial: 480 x 360 x 286 km (Wikipedia; Fernández-Valenzuela et al. 2025).
+    shape: { aKm: 240, bKm: 180, cKm: 143 },
     massKg: 1.6e19,
     rotPeriodHours: 9.68,
     axialTiltDeg: 0,

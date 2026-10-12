@@ -3,6 +3,7 @@ import { EARTH_RADIUS_KM } from '../../utils/astronomy';
 import { getBodyData } from '../../utils/smallBodies';
 import { PlanetTextureGenerator, PLANET_LOD_TIERS, PLANET_LOD_OPTIONS } from './PlanetTextureGenerator';
 import { applyEquirectLongitudeUV } from './equirectUV.js';
+import { resolveBodyAxesKm } from '../../utils/bodyShape.js';
 
 // Pluto was only photographed in detail on its New Horizons encounter hemisphere. The global
 // map fills the unobserved south polar region by interpolation, so everything below roughly
@@ -107,7 +108,18 @@ export class PlanetMeshBuilder {
     if (planetId === 'pluto') applyPlutoSouthPolarShadow(sphereMat);
 
     const bodyMesh = new THREE.Mesh(sphereGeo, sphereMat);
-    bodyMesh.scale.setScalar(radiusUnits);
+    // Non-spherical bodies (Haumea, the oblate gas giants, the irregular moons…) reuse this SAME
+    // unit sphere and become a triaxial ellipsoid through a NON-UNIFORM scale — no extra geometry,
+    // so there is no memory or build-time cost. `resolveBodyAxesKm` orders the axes for the sphere
+    // frame (+Y = polar/spin axis), so the polar semi-axis c lands on Y and the equatorial a, b on
+    // X, Z. NormalMatrix handles the squashed normals correctly. Bodies without a `shape` resolve
+    // to a uniform radiusKm on all three axes, i.e. the previous `setScalar` behaviour.
+    const axes = resolveBodyAxesKm(data);
+    bodyMesh.scale.set(
+      axes.x / EARTH_RADIUS_KM,
+      axes.y / EARTH_RADIUS_KM,
+      axes.z / EARTH_RADIUS_KM,
+    );
     bodyMesh.castShadow = true;
     bodyMesh.receiveShadow = true;
     // Marks a shared singleton geometry so per-system teardown never disposes it (see

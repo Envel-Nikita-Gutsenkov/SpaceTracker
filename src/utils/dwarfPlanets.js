@@ -34,6 +34,8 @@ export const DWARF_PLANETS = {
     bodyClass: 'dwarf',
     parentId: null,
     radiusKm: 469.7,
+    // Mildly triaxial: extents 964.4 x 964.2 x 891.8 km (JPL SBDB `extent`) -> semi-axes below.
+    shape: { aKm: 482.2, bKm: 482.1, cKm: 445.9 },
     massKg: 9.3839e20,
     rotPeriodHours: 9.074,
     axialTiltDeg: 4.0,
@@ -82,9 +84,12 @@ export const DWARF_PLANETS = {
   },
 
   // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=haumea&phys-par=1&full-prec=1
-  // Physical (Wikipedia, Haumea): strongly elongated Jacobi ellipsoid; use the MEAN radius
-  // from the 2019 shape solution 2100 x 1680 x 1074 km -> volume-equivalent radius ~780 km
-  // (long/short axes differ greatly; a single radius is an approximation).
+  // Physical (Wikipedia, Haumea): strongly elongated Jacobi ellipsoid. Semi-axes a x b x c =
+  // 1061 x 844 x 514 km, the best-fit triaxial shape from the 2017 occultation reanalysis of
+  // Proudfoot et al. (2026) PSJ (arXiv:2605.28636), which yields density 2050 kg/m^3 -- so the
+  // shape is self-consistent with the mass below. `radiusKm` is the volume-equivalent (mean)
+  // radius cbrt(1061*844*514) ~ 772 km; a single radius would badly misrepresent this body,
+  // hence the explicit `shape` (long/short axis ratio ~2.1).
   // Mass 3.95244e21 kg: Proudfoot et al. (2024) PSJ 5:69, Table 2, HST-only non-Keplerian
   // orbit fit (3952.44 x 10^18 kg) -- the SAME fit that supplies Hi'iaka/Namaka elements, so
   // mass and moon orbits are mutually consistent. (The older 4.006e21 kg of Ragozzine & Brown
@@ -95,7 +100,8 @@ export const DWARF_PLANETS = {
   haumea: {
     bodyClass: 'dwarf',
     parentId: null,
-    radiusKm: 780,
+    radiusKm: 772,
+    shape: { aKm: 1061, bKm: 844, cKm: 514 },
     massKg: 3.95244e21,
     rotPeriodHours: 3.9155,
     axialTiltDeg: 81.2,
@@ -112,7 +118,7 @@ export const DWARF_PLANETS = {
     descEn: 'A rapidly spinning, strongly elongated dwarf planet with a ring and two moons, coated in bright crystalline water ice.',
     descRu: 'Быстро вращающаяся сильно вытянутая карликовая планета с кольцом и двумя спутниками, покрытая ярким кристаллическим водяным льдом.',
     elements: { e: 0.1944430148898797, aAU: 43.06029023650952, iDeg: 28.20847393040364, nodeDeg: 121.7860561329425, argPeriDeg: 240.6905472508661, Tp: 2500416.599615282750, nDegPerDay: 0.003488097731816818, epochJD: 2461200.5 },
-    source: 'JPL SBDB (sstr=haumea, epoch 2461200.5) + Proudfoot et al. (2024) PSJ 5:69 (mass 3952.44e18 kg, HST-only fit) + NASA Science (Haumea) + Wikipedia (Haumea)',
+    source: 'JPL SBDB (sstr=haumea, epoch 2461200.5) + Proudfoot et al. (2024) PSJ 5:69 (mass 3952.44e18 kg, HST-only fit) + Proudfoot et al. (2026) PSJ, arXiv:2605.28636 (triaxial shape 1061x844x514 km) + NASA Science (Haumea) + Wikipedia (Haumea)',
   },
 
   // SBDB: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=quaoar&phys-par=1&full-prec=1
@@ -125,6 +131,8 @@ export const DWARF_PLANETS = {
     bodyClass: 'dwarf',
     parentId: null,
     radiusKm: 549,
+    // Triaxial ellipsoid 1166.6 x 1110.6 x 1020.0 km (Wikipedia) -> semi-axes below.
+    shape: { aKm: 583.3, bKm: 555.3, cKm: 510.0 },
     massKg: 1.212e21,
     rotPeriodHours: 8.84,
     axialTiltDeg: 12.6,
@@ -415,6 +423,8 @@ export const DWARF_PLANETS = {
     bodyClass: 'dwarf',
     parentId: null,
     radiusKm: 353,
+    // Elongated: dimensions 940 x 766 x 490 km (Dias-Oliveira et al. 2017) -> semi-axes below.
+    shape: { aKm: 470, bKm: 383, cKm: 245 },
     massKg: 1.84e20,
     rotPeriodHours: 13.42,
     axialTiltDeg: 0.0,
