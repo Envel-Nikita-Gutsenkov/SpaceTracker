@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { textureReadiness } from '../textureReadiness.js';
+import { decodeImageSource, scheduleIdle } from '../textureUpload.js';
 
 // Sampler settings shared by every streamed tier so a resolution swap never changes
 // wrapping, filtering or colour handling.
@@ -51,13 +52,13 @@ export class LodTexture {
     this._distance = Infinity;
 
     this.levels[this.baseIndex].texture = configure(new THREE.Texture());
-    this._request(this.baseIndex);
+    this._request(this.baseIndex, true);
 
     // Eagerly fetch + decode + pre-upload every tier up front. The one-time cost (a large
     // JPEG decode and a full-resolution GPU upload) then lands while the app is still
     // booting, instead of firing mid-zoom the moment the camera crosses a threshold.
     if (preload) {
-      for (let i = 0; i < this.levels.length; i++) this._request(i);
+      for (let i = 0; i < this.levels.length; i++) this._request(i, true);
     }
   }
 
@@ -78,7 +79,7 @@ export class LodTexture {
     return best;
   }
 
-  _request(index) {
+  _request(index, eager = false) {
     const level = this.levels[index];
     if (!level) return Promise.resolve();
     if (level.status === 'loading' || level.status === 'ready') return level._readyPromise || Promise.resolve();
@@ -95,23 +96,35 @@ export class LodTexture {
       const img = new Image();
       img.crossOrigin = 'anonymous';
 
-      const commit = () => {
-        level.texture.image = img;
-        level.texture.needsUpdate = true;
+      const finish = () => {
         level.status = 'ready';
-        // Pay the (large) GPU upload now, during prefetch, not at the swap moment.
-        if (this.renderer && typeof this.renderer.initTexture === 'function') {
-          try { this.renderer.initTexture(level.texture); } catch { /* non-fatal */ }
-        }
         this.update(this._distance);
         resolve();
       };
 
-      img.onload = () => {
-        // decode() moves the heavy JPEG decode off the main thread where supported.
-        if (typeof img.decode === 'function') img.decode().then(commit, commit);
-        else commit();
+      const commit = async () => {
+        // Decode off the main thread and skip the browser's colour-management pass (see
+        // decodeImageSource) — the single biggest avoidable cost on an 8K/16K map.
+        level.texture.image = await decodeImageSource(img);
+        level.texture.needsUpdate = true;
+        // Pay the (large) GPU upload now, during prefetch, not at the swap moment.
+        if (this.renderer && typeof this.renderer.initTexture === 'function') {
+          const upload = () => {
+            try { this.renderer.initTexture(level.texture); } catch { /* non-fatal */ }
+            finish();
+          };
+          // Boot-critical tiers (the base map, or any tier of a preloaded set) upload
+          // immediately — the loading overlay already hides the stall and startup stays fast.
+          // A tier fetched lazily mid-session defers its upload to an idle gap so it never
+          // blocks a gesture.
+          if (eager) upload();
+          else scheduleIdle(upload);
+        } else {
+          finish();
+        }
       };
+
+      img.onload = () => { commit(); };
       // A failed tier must never hold the boot gate open.
       img.onerror = () => { level.status = 'error'; resolve(); };
       img.src = level.url;

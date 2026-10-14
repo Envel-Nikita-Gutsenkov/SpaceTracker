@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getBodyData } from '../../utils/smallBodies';
 import { EARTH_RADIUS_KM } from '../../utils/astronomy';
 import { textureReadiness } from '../textureReadiness.js';
-import { uploadTextureNow } from '../textureUpload.js';
+import { uploadTextureNow, decodeImageSource } from '../textureUpload.js';
 import {
   pseudoNoise, smoothNoise, fbm,
   genericSeed, fillGenericSurface,
@@ -207,13 +207,13 @@ export class PlanetTextureGenerator {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     const ready = new Promise((resolve) => {
-      img.onload = () => {
+      img.onload = async () => {
         if (onReady) {
           const real = applySamplerSettings(new THREE.Texture());
-          real.image = img;
+          // Decode off the main thread and skip the browser colour-management pass (see
+          // decodeImageSource), then upload behind the boot gate so the first draw never hitches.
+          real.image = await decodeImageSource(img);
           real.needsUpdate = true;
-          // Upload the real map now, behind the boot gate, so its first-draw upload never
-          // lands as a hitch on the first frame the planets become visible.
           uploadTextureNow(renderer, real);
           onReady(real);
         }
