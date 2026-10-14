@@ -31,7 +31,7 @@ const { EARTH_RADIUS_KM } = await import('../src/utils/astronomy.js');
 const { getDwarfPositionThreeJS, getMoonOffsetThreeJS } = await import('../src/utils/smallBodyEphemeris.js');
 
 let passed = 0;
-const TOTAL = 8;
+const TOTAL = 9;
 function test(name, fn) {
   fn();
   passed++;
@@ -118,6 +118,7 @@ function makeSystem() {
     parent.group.add(pivot);
     b.pivot = pivot;
     b.moonOrbitLine = makeOrbitLine();
+    b.moonOrbitLine.material.opacity = 0.35;
     pivot.add(b.moonOrbitLine);
     sys.smallBodies.set(key, b);
   });
@@ -243,6 +244,34 @@ test('official dwarf planets and candidates are gated by two independent toggles
   for (const id of candidates) {
     assert.equal(sys.smallBodies.get(id).group.visible, true, `candidate "${id}" must show`);
   }
+});
+
+test('selected moon orbit fades out at close range and obeys the orbit toggle', () => {
+  const phobos = sys.smallBodies.get('phobos');
+  const line = phobos.moonOrbitLine;
+  const camera = new THREE.PerspectiveCamera();
+  const updatePhobosOrbit = (distance, showOrbits = true) => {
+    sys._updateSmallBodies(DATE, SUN, null, null, 'phobos', showOrbits, false, false, false);
+    camera.position.copy(worldOf('phobos')).add(new THREE.Vector3(distance, 0, 0));
+    sys._updateSmallBodies(DATE, SUN, camera, null, 'phobos', showOrbits, false, false, false);
+  };
+  const radius = phobos.radiusUnits;
+
+  updatePhobosOrbit(radius * 500);
+  assert.equal(line.visible, true, 'the orbit should be visible at a distance');
+  assert.equal(line.material.opacity, 0.35, 'the orbit should retain full opacity outside the fade range');
+
+  updatePhobosOrbit(radius * 215);
+  assert.ok(Math.abs(line.material.opacity - 0.175) < 1e-12,
+    'the orbit should fade linearly through the approach range');
+  assert.equal(line.visible, true);
+
+  updatePhobosOrbit(radius * 15);
+  assert.equal(line.material.opacity, 0, 'the orbit should fade completely near the moon');
+  assert.equal(line.visible, false, 'fully faded orbit geometry should be hidden');
+
+  updatePhobosOrbit(radius * 500, false);
+  assert.equal(line.visible, false, 'the planetary-orbits toggle should hide the selected moon orbit');
 });
 
 test('orbits are click-only: no dwarf or moon layer draws every ellipse at once', () => {

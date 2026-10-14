@@ -135,6 +135,16 @@ test('body/moon point layers default to hidden and toggle round-trips', () => {
 });
 
 TOTAL++;
+test('planetary orbiter ring visibility defaults on and can be toggled off', () => {
+  assert.equal(useSatStore.getState().showPlanetaryOrbiterRings, true,
+    'existing orbiter-ring visibility should be preserved by default');
+  useSatStore.getState().toggleShowPlanetaryOrbiterRings();
+  assert.equal(useSatStore.getState().showPlanetaryOrbiterRings, false);
+  useSatStore.getState().setShowPlanetaryOrbiterRings(true);
+  assert.equal(useSatStore.getState().showPlanetaryOrbiterRings, true);
+});
+
+TOTAL++;
 test('interstellar probe markers default to hidden and toggle round-trips', () => {
   assert.equal(useSatStore.getState().showDeepSpaceProbes, false,
     'deep-space probe markers must default to hidden');

@@ -148,8 +148,10 @@ test('the render system creates and gates dwarfs and moons', () => {
   // body shows its orbit, so enabling dwarfs/moons cannot flood the scene with every ellipse.
   assert.match(src, /line\.visible = Boolean\(showPlanetaryOrbits && \(isSelected \|\| isFocused\)\)/,
     'dwarf orbit lines must be selection-only');
-  assert.match(src, /moonOrbitLine\.visible = Boolean\(isSelected \|\| isFocused\)/,
-    'moon orbit lines must be selection-only');
+  assert.match(src, /showPlanetaryOrbits && \(isSelected \|\| isFocused\) && orbitFade > 0\.0/,
+    'moon orbit lines must be selected-only, fade at close range, and obey the orbit toggle');
+  assert.match(src, /moonOrbitLine\.material\.opacity = MOON_ORBIT_LINE_OPACITY \* orbitFade/,
+    'selected moon orbit lines must fade smoothly with camera distance');
   assert.doesNotMatch(src, /isSelected \|\| isFocused \|\| showMoons/,
     'moon orbits must not ride the whole moon layer');
   assert.match(src, /isOfficialDwarf\(id\) \? showDwarfPlanets : showDwarfCandidates/,

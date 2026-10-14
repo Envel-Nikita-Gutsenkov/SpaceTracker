@@ -116,7 +116,8 @@ export class PlanetFleet {
         transparent: true,
         opacity: 0.85,
         blending: THREE.AdditiveBlending,
-        depthTest: false,
+        depthTest: true,
+        depthWrite: false,
       });
       const autoRing = new THREE.Mesh(ringGeo, ringMat);
       autoRing.renderOrder = 998;
@@ -160,7 +161,7 @@ export class PlanetFleet {
     };
   }
 
-  update(date, camera, selectedSatId = null, showAllOrbits = false) {
+  update(date, camera, selectedSatId = null, showAllOrbits = false, showOrbiterRings = true) {
     const timeMs = date ? date.getTime() : Date.now();
 
     for (const [planetId, entry] of this.entries) {
@@ -217,7 +218,7 @@ export class PlanetFleet {
 
         // Auto ring: suppressed for the selected orbiter (the close-up pass draws its own)
         // and once the camera is close enough that the hull is large on screen.
-        const showRing = !isSelected && Boolean(camera) && camDist > RING_FROM_UNITS;
+        const showRing = showOrbiterRings && !isSelected && Boolean(camera) && camDist > RING_FROM_UNITS;
         item.autoRing.visible = showRing;
         if (showRing) {
           item.autoRing.position.set(local.x, local.y, local.z);

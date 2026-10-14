@@ -38,6 +38,7 @@ export const useSatStore = create((set) => ({
   showRealisticShapeModels: false, // Optional NASA body meshes; the current renderer remains the fallback
   showBodyPoints: false,   // Screen-space "there is something here" dots for planets + dwarfs (off by default)
   showMoonPoints: false,   // Separate point layer for every moon (off by default)
+  showPlanetaryOrbiterRings: true, // Auto-rings around artificial orbiters of other planets
   showDeepSpaceProbes: false, // Interstellar probes (Voyager/Pioneer/New Horizons) markers stay hidden by default
   showGeographicLabels: false, // City / continent names on the Earth globe stay hidden by default
   showSat3DModel: true,
@@ -166,6 +167,9 @@ export const useSatStore = create((set) => ({
 
   setShowMoonPoints: (v) => set({ showMoonPoints: v }),
   toggleShowMoonPoints: () => set((state) => ({ showMoonPoints: !state.showMoonPoints })),
+
+  setShowPlanetaryOrbiterRings: (v) => set({ showPlanetaryOrbiterRings: v }),
+  toggleShowPlanetaryOrbiterRings: () => set((state) => ({ showPlanetaryOrbiterRings: !state.showPlanetaryOrbiterRings })),
 
   setShowDeepSpaceProbes: (v) => set({ showDeepSpaceProbes: v }),
   toggleShowDeepSpaceProbes: () => set((state) => ({ showDeepSpaceProbes: !state.showDeepSpaceProbes })),

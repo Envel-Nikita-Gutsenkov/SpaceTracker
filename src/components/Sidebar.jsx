@@ -68,6 +68,7 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showRealisticShapeModels, toggleShowRealisticShapeModels,
     showBodyPoints, toggleShowBodyPoints,
     showMoonPoints, toggleShowMoonPoints,
+    showPlanetaryOrbiterRings, toggleShowPlanetaryOrbiterRings,
     showDeepSpaceProbes, toggleShowDeepSpaceProbes,
     showGeographicLabels, toggleShowGeographicLabels,
     showSat3DModel, toggleShowSat3DModel,
@@ -100,6 +101,7 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
     showRealisticShapeModels: s.showRealisticShapeModels, toggleShowRealisticShapeModels: s.toggleShowRealisticShapeModels,
     showBodyPoints: s.showBodyPoints, toggleShowBodyPoints: s.toggleShowBodyPoints,
     showMoonPoints: s.showMoonPoints, toggleShowMoonPoints: s.toggleShowMoonPoints,
+    showPlanetaryOrbiterRings: s.showPlanetaryOrbiterRings, toggleShowPlanetaryOrbiterRings: s.toggleShowPlanetaryOrbiterRings,
     showDeepSpaceProbes: s.showDeepSpaceProbes, toggleShowDeepSpaceProbes: s.toggleShowDeepSpaceProbes,
     showGeographicLabels: s.showGeographicLabels, toggleShowGeographicLabels: s.toggleShowGeographicLabels,
     showSat3DModel: s.showSat3DModel, toggleShowSat3DModel: s.toggleShowSat3DModel,
@@ -656,6 +658,13 @@ export default function Sidebar({ minimalist, onToggleMinimalist, onFocusMoon, o
                   <span className="cat-dot" style={{ background: '#fcd34d' }} />
                   <span className="cat-name">{t('moon_points', 'Moon Points')}</span>
                   <Toggle on={showMoonPoints} onChange={toggleShowMoonPoints} />
+                </div>
+
+                {/* Automatic colored rings around artificial orbiters of other planets */}
+                <div className="cat-item" onClick={toggleShowPlanetaryOrbiterRings}>
+                  <span className="cat-dot" style={{ background: '#f59e0b' }} />
+                  <span className="cat-name">{t('planetary_orbiter_rings', 'Planetary Orbiter Rings')}</span>
+                  <Toggle on={showPlanetaryOrbiterRings} onChange={toggleShowPlanetaryOrbiterRings} />
                 </div>
 
                 {/* Interstellar / escape probes (Voyager, Pioneer, New Horizons) — hidden until enabled */}

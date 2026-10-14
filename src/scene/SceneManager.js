@@ -691,7 +691,13 @@ export class SceneManager {
     // Artificial satellites of the other planets + the interstellar/escape probes.
     perfProbe.begin('fleet');
     if (this.planetFleet) {
-      this.planetFleet.update(date, this.camera, selectedSatId, showAllOrbits);
+      this.planetFleet.update(
+        date,
+        this.camera,
+        selectedSatId,
+        showAllOrbits,
+        Boolean(store.showPlanetaryOrbiterRings),
+      );
     }
     if (this.deepSpace) {
       this.deepSpace.update(date, sunPos, this.camera, selectedSatId, showAllOrbits, Boolean(store.showDeepSpaceProbes));

@@ -32,6 +32,9 @@ import { SmallBodyShapeModels } from './SmallBodyShapeModels.js';
 // Camera distance (in planet radii) below which the planet is considered "strongly
 // zoomed": every other planet's orbit line is then removed from the view.
 const STRONG_ZOOM_FACTOR = 40.0;
+const MOON_ORBIT_LINE_OPACITY = 0.35;
+const MOON_ORBIT_FADE_START_RADII = 400.0;
+const MOON_ORBIT_FADE_END_RADII = 30.0;
 
 export class PlanetarySystem {
   constructor(scene, renderer = null) {
@@ -493,9 +496,24 @@ export class PlanetarySystem {
 
       if (isMoonBody) {
         if (body.moonOrbitLine) {
-          // Only the selected/focused moon shows its orbit — never the whole moon layer at once
-          // (the point/moon toggles reveal bodies, not a web of every satellite ellipse).
-          body.moonOrbitLine.visible = Boolean(isSelected || isFocused);
+          // Only the selected/focused moon shows its orbit — never the whole moon layer at once.
+          // Fade the selected orbit as the camera closes in so it doesn't cut across the body.
+          let orbitFade = 1.0;
+          if (camera) {
+            body.group.getWorldPosition(this._tempV);
+            const camDistToMoon = camera.position.distanceTo(this._tempV);
+            const fadeStart = body.radiusUnits * MOON_ORBIT_FADE_START_RADII;
+            const fadeEnd = body.radiusUnits * MOON_ORBIT_FADE_END_RADII;
+            orbitFade = THREE.MathUtils.clamp(
+              (camDistToMoon - fadeEnd) / (fadeStart - fadeEnd),
+              0.0,
+              1.0,
+            );
+          }
+          body.moonOrbitLine.material.opacity = MOON_ORBIT_LINE_OPACITY * orbitFade;
+          body.moonOrbitLine.visible = Boolean(
+            showPlanetaryOrbits && (isSelected || isFocused) && orbitFade > 0.0,
+          );
         }
       } else {
         // Heliocentric orbit line (static osculating ellipse — built once).

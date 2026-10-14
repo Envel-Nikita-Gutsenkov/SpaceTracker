@@ -42,7 +42,7 @@ function test(name, fn) {
   console.log(`  [PASS] ${name}`);
 }
 
-const TOTAL = 10;
+const TOTAL = 11;
 
 console.log('Attachment integrity: every object bound to the right parent body');
 
@@ -161,6 +161,32 @@ test('fleet builds one anchored group per orbited parent planet', () => {
     assert.ok(Math.abs(entry.planetRadiusUnits - expectedRadius) < 1e-9,
       `"${id}" planetRadiusUnits mismatch`);
     assert.ok(entry.items.length > 0, `"${id}" has no orbiters`);
+  }
+});
+
+test('planetary orbiter rings respect their visibility gate and depth buffer', () => {
+  const marsEntry = fleet.entries.get('mars');
+  const ring = marsEntry.items[0].autoRing;
+  const oldMarsPosition = stubPositions.get('mars').clone();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 10);
+  stubPositions.set('mars', new THREE.Vector3());
+
+  assert.equal(ring.material.depthTest, true,
+    'opaque planets and moons must occlude rings behind their surfaces');
+  assert.equal(ring.material.depthWrite, false,
+    'transparent rings must not write into the scene depth buffer');
+
+  try {
+    fleet.update(DATES[0], camera, null, false, false);
+    assert.equal(ring.visible, false, 'the display toggle must hide automatic rings');
+    assert.equal(marsEntry.items[0].dot.visible, true,
+      'hiding the rings must leave the orbiter point marker visible');
+    fleet.update(DATES[0], camera, null, false, true);
+    assert.equal(ring.visible, true, 'enabling the display toggle must show automatic rings');
+  } finally {
+    stubPositions.set('mars', oldMarsPosition);
+    fleet.update(DATES[0], null);
   }
 });
 
