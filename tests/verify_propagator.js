@@ -75,7 +75,7 @@ test('a malformed TLE is not fatal and still occupies its slot', () => {
 // 2. propagate -> positions
 // ---------------------------------------------------------------------------
 TOTAL++;
-test('propagate posts transferable position/valid buffers aligned with the ids', () => {
+test('propagate posts transferable position/velocity/valid buffers aligned with the ids', () => {
   reset();
   globalThis.self.onmessage({ data: { type: 'init', data: [
     { id: 25544, tle1: ISS_TLE_1, tle2: ISS_TLE_2 },
@@ -85,12 +85,14 @@ test('propagate posts transferable position/valid buffers aligned with the ids',
 
   const { msg, transfer } = last('positions');
   assert.ok(msg.positions instanceof Float32Array);
+  assert.ok(msg.velocities instanceof Float32Array);
   assert.ok(msg.valid instanceof Uint8Array);
   assert.equal(msg.positions.length, 3);
+  assert.equal(msg.velocities.length, 3);
   assert.equal(msg.valid.length, 1);
   assert.deepEqual(msg.ids, [25544]);
-  // Both buffers must be transferred (zero-copy) to the main thread.
-  assert.equal(transfer.length, 2);
+  // All three buffers must be transferred (zero-copy) to the main thread.
+  assert.equal(transfer.length, 3);
 });
 
 TOTAL++;
@@ -130,6 +132,32 @@ test('worker ECI-to-Three conversion matches the right-handed frame', () => {
   assert.ok(Math.abs(x - expected.x * scale) < 1e-6, 'worker X must equal ECI X');
   assert.ok(Math.abs(y - expected.z * scale) < 1e-6, 'worker Y must equal north-pole ECI Z');
   assert.ok(Math.abs(z + expected.y * scale) < 1e-6, 'worker Z must equal negative eastward ECI Y');
+});
+
+TOTAL++;
+test('worker velocity uses the same frame and scale as the position', () => {
+  const date = new Date(Date.UTC(2024, 0, 1, 12));
+  const rec = satellite.twoline2satrec(ISS_TLE_1, ISS_TLE_2);
+  const expected = satellite.propagate(rec, date).velocity;
+
+  reset();
+  globalThis.self.onmessage({ data: { type: 'init', data: [
+    { id: 25544, tle1: ISS_TLE_1, tle2: ISS_TLE_2 },
+  ] } });
+  reset();
+  globalThis.self.onmessage({ data: { type: 'propagate', data: { timeMs: date.getTime() } } });
+
+  const { msg } = last('positions');
+  const [vx, vy, vz] = msg.velocities;
+  const scale = 1 / 6371;
+  assert.ok(Math.abs(vx - expected.x * scale) < 1e-9, 'worker vX must equal ECI vX');
+  assert.ok(Math.abs(vy - expected.z * scale) < 1e-9, 'worker vY must equal north-pole ECI vZ');
+  assert.ok(Math.abs(vz + expected.y * scale) < 1e-9, 'worker vZ must equal negative eastward ECI vY');
+
+  // ISS speed is ~7.66 km/s => ~0.0012 Earth radii per second.
+  const speed = Math.hypot(vx, vy, vz);
+  assert.ok(speed > 0.0011 && speed < 0.0013,
+    `ISS scene speed ${speed.toExponential(4)} is outside the expected band`);
 });
 
 TOTAL++;

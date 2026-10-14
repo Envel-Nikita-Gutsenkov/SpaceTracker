@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as satjs from 'satellite.js';
 import { CATEGORIES, getCategoryColorRGB } from '../utils/categories';
 import { eciToThreeJS } from '../utils/astronomy';
+import { extrapolationDt, MAX_EXTRAPOLATION_SEC } from '../utils/satelliteMotion';
 import { useSatStore } from '../store/useSatStore';
 
 const WORKER_COUNT      = 4;
@@ -16,8 +17,10 @@ const SAT_VERT = /* glsl */ `
   attribute float aSize;
   attribute float aSelected;
   attribute float aSatId;
+  attribute vec3  aVelocity;
   uniform float   uScale;
   uniform float   uHideSelectedId;
+  uniform float   uDt;
   varying vec3    vColor;
   varying float   vSel;
   varying float   vHide;
@@ -36,7 +39,11 @@ const SAT_VERT = /* glsl */ `
       return;
     }
 
-    vec4 mvPos    = modelViewMatrix * vec4(position, 1.0);
+    // Dead-reckon between the 1 Hz worker samples: position + velocity * dt keeps every
+    // satellite gliding at 60+ FPS instead of snapping once per tick. aVelocity is zero for
+    // the selected satellite (its position is already exact every frame) and for hidden ones.
+    vec3 framePos = position + aVelocity * uDt;
+    vec4 mvPos    = modelViewMatrix * vec4(framePos, 1.0);
     float camDist = length(mvPos.xyz);
     float sizePx  = (aSize * 0.8 * uScale) + (aSelected * 3.5);
     gl_PointSize  = sizePx * (180.0 / camDist);
@@ -77,6 +84,7 @@ export class SatelliteManager {
     this.workers  = [];
     this.assigns  = [];           // per-worker { start, items[] }
     this.master   = new Float32Array(0); // global ECI positions [x,y,z per sat]
+    this.masterVel= new Float32Array(0); // global scene velocities [vx,vy,vz per sat]
     this.idToIdx  = new Map();
     this.labels   = [];           // { sprite, satIdx } pool
     this.labelPool= [];
@@ -84,6 +92,13 @@ export class SatelliteManager {
     this.timer    = null;
     this._filterCache = { cats: null, query: '' };
     this._workersPending = 0;
+    // Simulation time (ms) the worker positions/velocities are valid at, and the latest local
+    // sim time seen by the render loop. Their difference is the per-frame extrapolation dt.
+    this._sampleSimTime = 0;
+    // Sim time the in-flight worker batch was requested at; only promoted to _sampleSimTime once
+    // the replies land (see _onWorkerMsg).
+    this._pendingSampleTime = 0;
+    this._localSimTime  = undefined;
   }
 
   _getGlobalIndex(satId) {
@@ -99,6 +114,7 @@ export class SatelliteManager {
     this.sats = sats.filter(s => s.tle1 && s.tle2);
     useSatStore.getState().setSatelliteCount(this.sats.length);
     this.master = new Float32Array(this.sats.length * 3);
+    this.masterVel = new Float32Array(this.sats.length * 3);
 
     // Map id → global index (both number and string forms for reliable lookup)
     this.sats.forEach((s, i) => {
@@ -122,6 +138,7 @@ export class SatelliteManager {
       if (!items.length) return;
       const n         = items.length;
       const positions = new Float32Array(n * 3);
+      const velocities= new Float32Array(n * 3);
       const colors    = new Float32Array(n * 3);
       const sizes     = new Float32Array(n).fill(cat.dotSize ?? 2);
       const selected  = new Float32Array(n);
@@ -135,6 +152,7 @@ export class SatelliteManager {
 
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+      geo.setAttribute('aVelocity',new THREE.BufferAttribute(velocities,3).setUsage(THREE.DynamicDrawUsage));
       geo.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
       geo.setAttribute('aSize',    new THREE.BufferAttribute(sizes,     1));
       geo.setAttribute('aSelected',new THREE.BufferAttribute(selected,  1).setUsage(THREE.DynamicDrawUsage));
@@ -151,6 +169,7 @@ export class SatelliteManager {
           uScale:           { value: 1.0 },
           uOpacity:         { value: 1.0 },
           uHideSelectedId:  { value: 0.0 },
+          uDt:              { value: 0.0 },
         },
       });
 
@@ -165,7 +184,7 @@ export class SatelliteManager {
 
       this.scene.add(points);
 
-      this.catData[cat.id] = { points, items, activeItems: [...items], positions, colors, sizes, selected, satIds };
+      this.catData[cat.id] = { points, items, activeItems: [...items], positions, velocities, colors, sizes, selected, satIds };
     });
 
     // Apply any initial filters from store immediately
@@ -266,15 +285,23 @@ export class SatelliteManager {
   }
 
   _tick() {
-    const timeMs = useSatStore.getState().simTime;
+    // Sample at the local clock (the value the render loop is about to extrapolate from), not the
+    // throttled store time, so the per-frame dt stays small and unbiased.
+    const timeMs = this._localSimTime !== undefined ? this._localSimTime : useSatStore.getState().simTime;
     this._lastPropagatedSim = timeMs;
+    // Record the batch's sample time but do NOT advance _sampleSimTime here: `master` only becomes
+    // valid at this time when the replies actually land (_onWorkerMsg). Advancing the clock at
+    // request time reset the extrapolation against a one-tick-stale buffer, so every point snapped
+    // a full second of motion *backwards* the instant a tick fired (then jumped forward when the
+    // reply arrived) — the "second point shooting the opposite way".
+    this._pendingSampleTime = timeMs;
     this._workersPending = this.workers.length;
     this.workers.forEach(w => w.postMessage({ type: 'propagate', data: { timeMs } }));
   }
 
   _onWorkerMsg(workerIdx, msg) {
     if (msg.type !== 'positions') return;
-    const { positions } = msg;
+    const { positions, velocities } = msg;
     const assign = this.assigns[workerIdx];
     const selGi = this.selectedId !== null ? this._getGlobalIndex(this.selectedId) : -1;
 
@@ -286,11 +313,20 @@ export class SatelliteManager {
       this.master[item.gi * 3]     = positions[i * 3];
       this.master[item.gi * 3 + 1] = positions[i * 3 + 1];
       this.master[item.gi * 3 + 2] = positions[i * 3 + 2];
+      if (velocities) {
+        this.masterVel[item.gi * 3]     = velocities[i * 3];
+        this.masterVel[item.gi * 3 + 1] = velocities[i * 3 + 1];
+        this.masterVel[item.gi * 3 + 2] = velocities[i * 3 + 2];
+      }
     });
 
     this._workersPending--;
-    // Update GPU geometry once per tick instead of 4 separate GPU buffer uploads per second
+    // Update GPU geometry once per tick instead of 4 separate GPU buffer uploads per second.
+    // The whole batch is in, so `master` now holds positions valid at `_pendingSampleTime` — only
+    // now may the extrapolation clock advance, which keeps the dead-reckoned point continuous
+    // across the tick boundary instead of snapping backwards.
     if (this._workersPending <= 0) {
+      this._sampleSimTime = this._pendingSampleTime;
       this._syncGeometry();
     }
   }
@@ -308,7 +344,7 @@ export class SatelliteManager {
     Object.values(this.catData).forEach(data => {
       if (!data.points.visible) return;
       const list = data.activeItems || data.items;
-      const { positions } = data;
+      const { positions, velocities } = data;
       const drawRange = data.points.geometry.drawRange;
       const visCount  = drawRange.count === Infinity ? list.length : Math.min(drawRange.count, list.length);
 
@@ -321,6 +357,7 @@ export class SatelliteManager {
         const isSelected = selIdStr !== null && itemIdStr === selIdStr;
 
         let x, y, z;
+        let vx = 0, vy = 0, vz = 0;
         if (isHidden) {
           x = 1e8; y = 1e8; z = 1e8;
           data.sizes[i] = 0.0;
@@ -329,15 +366,25 @@ export class SatelliteManager {
           x = this._liveSelectedPos.x;
           y = this._liveSelectedPos.y;
           z = this._liveSelectedPos.z;
+          // Selected position is exact every frame; leave velocity 0 so the shader does not
+          // extrapolate it a second time.
         } else {
           x = this.master[gi * 3];
           y = this.master[gi * 3 + 1];
           z = this.master[gi * 3 + 2];
+          vx = this.masterVel[gi * 3];
+          vy = this.masterVel[gi * 3 + 1];
+          vz = this.masterVel[gi * 3 + 2];
         }
 
         positions[i * 3]     = x;
         positions[i * 3 + 1] = y;
         positions[i * 3 + 2] = z;
+        if (velocities) {
+          velocities[i * 3]     = vx;
+          velocities[i * 3 + 1] = vy;
+          velocities[i * 3 + 2] = vz;
+        }
 
         // 1. If user clicked a satellite, label it
         // 2. If user explicitly enabled Satellite Labels toggle in sidebar, show labels for visible satellites
@@ -352,6 +399,9 @@ export class SatelliteManager {
         }
       }
       data.points.geometry.attributes.position.needsUpdate = true;
+      if (data.points.geometry.attributes.aVelocity) {
+        data.points.geometry.attributes.aVelocity.needsUpdate = true;
+      }
     });
 
     // Update labels cleanly
@@ -451,6 +501,7 @@ export class SatelliteManager {
       // Reorder positions: matching sats first, then setDrawRange
       const { items } = data;
       const tempPos = new Float32Array(items.length * 3);
+      const tempVel = new Float32Array(items.length * 3);
       const activeItems = [];
       let write = 0;
 
@@ -511,6 +562,9 @@ export class SatelliteManager {
         tempPos[write * 3]     = this.master[gi * 3];
         tempPos[write * 3 + 1] = this.master[gi * 3 + 1];
         tempPos[write * 3 + 2] = this.master[gi * 3 + 2];
+        tempVel[write * 3]     = this.masterVel[gi * 3];
+        tempVel[write * 3 + 1] = this.masterVel[gi * 3 + 1];
+        tempVel[write * 3 + 2] = this.masterVel[gi * 3 + 2];
         if (data.satIds) data.satIds[write] = item.sat.id || 0;
         if (data.selected) data.selected[write] = (this.selectedId && item.sat.id === this.selectedId) ? 1.0 : 0.0;
         activeItems.push(item);
@@ -519,7 +573,11 @@ export class SatelliteManager {
 
       data.activeItems = activeItems;
       data.positions.set(tempPos);
+      data.velocities.set(tempVel);
       data.points.geometry.attributes.position.needsUpdate = true;
+      if (data.points.geometry.attributes.aVelocity) {
+        data.points.geometry.attributes.aVelocity.needsUpdate = true;
+      }
       if (data.points.geometry.attributes.aSatId) {
         data.points.geometry.attributes.aSatId.needsUpdate = true;
       }
@@ -614,6 +672,9 @@ export class SatelliteManager {
             data.positions[localIdx * 3]     = 1e8;
             data.positions[localIdx * 3 + 1] = 1e8;
             data.positions[localIdx * 3 + 2] = 1e8;
+            data.velocities[localIdx * 3]     = 0.0;
+            data.velocities[localIdx * 3 + 1] = 0.0;
+            data.velocities[localIdx * 3 + 2] = 0.0;
             if (data.points.geometry.attributes.aSize) {
               data.points.geometry.attributes.aSize.needsUpdate = true;
             }
@@ -622,6 +683,9 @@ export class SatelliteManager {
             }
             if (data.points.geometry.attributes.position) {
               data.points.geometry.attributes.position.needsUpdate = true;
+            }
+            if (data.points.geometry.attributes.aVelocity) {
+              data.points.geometry.attributes.aVelocity.needsUpdate = true;
             }
           }
         }
@@ -644,6 +708,9 @@ export class SatelliteManager {
             data.positions[localIdx * 3]     = this.master[gi * 3];
             data.positions[localIdx * 3 + 1] = this.master[gi * 3 + 1];
             data.positions[localIdx * 3 + 2] = this.master[gi * 3 + 2];
+            data.velocities[localIdx * 3]     = this.masterVel[gi * 3];
+            data.velocities[localIdx * 3 + 1] = this.masterVel[gi * 3 + 1];
+            data.velocities[localIdx * 3 + 2] = this.masterVel[gi * 3 + 2];
             if (data.points.geometry.attributes.aSize) {
               data.points.geometry.attributes.aSize.needsUpdate = true;
             }
@@ -652,6 +719,9 @@ export class SatelliteManager {
             }
             if (data.points.geometry.attributes.position) {
               data.points.geometry.attributes.position.needsUpdate = true;
+            }
+            if (data.points.geometry.attributes.aVelocity) {
+              data.points.geometry.attributes.aVelocity.needsUpdate = true;
             }
           }
         }
@@ -792,6 +862,17 @@ export class SatelliteManager {
   }
 
   update(timeMs, focusedSatId = null) {
+    this._localSimTime = timeMs;
+
+    // Dead-reckon every satellite between worker samples through a single shared dt uniform.
+    // It is 0 while paused or immediately after a tick, and ramps up to the clamp between ticks
+    // — this is what turns the 1 Hz constellation into continuous motion at 60+ FPS.
+    const dt = extrapolationDt(this._sampleSimTime, timeMs, MAX_EXTRAPOLATION_SEC);
+    Object.values(this.catData).forEach(d => {
+      const u = d.points?.material?.uniforms?.uDt;
+      if (u) u.value = dt;
+    });
+
     // 1. Real-time per-frame analytical synchronization for active satellites (selected and/or focused):
     // Updates vertex positions at 60+ FPS so there is ZERO lag, ZERO backwards drifting, and ZERO stuttering
     const activeSatIds = new Set();
@@ -830,9 +911,17 @@ export class SatelliteManager {
               data.positions[localIdx * 3 + 1] = live.y;
               data.positions[localIdx * 3 + 2] = live.z;
             }
+            // The selected satellite's position is exact every frame — zero its velocity so the
+            // shader's dead-reckoning does not move it a second time.
+            data.velocities[localIdx * 3]     = 0.0;
+            data.velocities[localIdx * 3 + 1] = 0.0;
+            data.velocities[localIdx * 3 + 2] = 0.0;
             data.points.geometry.attributes.position.needsUpdate = true;
             if (data.points.geometry.attributes.aSize) {
               data.points.geometry.attributes.aSize.needsUpdate = true;
+            }
+            if (data.points.geometry.attributes.aVelocity) {
+              data.points.geometry.attributes.aVelocity.needsUpdate = true;
             }
           }
         }
